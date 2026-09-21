@@ -356,124 +356,145 @@
 
   function drawTrafficCar(car) {
     if (car.z <= 22 || car.z > VIEW_DISTANCE) return;
+
     const p = project(car.z, car.x);
     const s = Math.max(.12, p.scale);
-    const w = 112 * s;
-    const h = 142 * s;
+    const w = 132 * s;
+    const h = 158 * s;
 
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    // Ground shadow
-    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    // نفس شكل سيارة اللاعب تماماً، لكن بلون السيارة.
+    ctx.fillStyle = 'rgba(0,0,0,.34)';
     ctx.beginPath();
-    ctx.ellipse(0, 2, w*.60, h*.11, 0, 0, Math.PI*2);
+    ctx.ellipse(0, 3, w*.58, h*.11, 0, 0, Math.PI*2);
     ctx.fill();
 
-    // Wheels
-    const wheelR = Math.max(2.2, 8*s);
-    const wheelY = -h*.20;
-    const wheelY2 = -h*.67;
+    const wheelR = 19 * s;
     ctx.fillStyle = '#08090b';
-    [-1,1].forEach(side => {
-      ctx.beginPath();
-      ctx.ellipse(side*w*.46, wheelY, wheelR*.72, wheelR, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(side*w*.38, wheelY2, wheelR*.64, wheelR*.88, 0, 0, Math.PI*2);
-      ctx.fill();
-    });
-
-    ctx.fillStyle = '#8b939c';
-    [-1,1].forEach(side => {
-      ctx.beginPath();
-      ctx.ellipse(side*w*.46, wheelY, wheelR*.30, wheelR*.46, 0, 0, Math.PI*2);
-      ctx.fill();
-    });
-
-    // Rear lower body
-    ctx.fillStyle = car.color;
-    ctx.shadowColor = 'rgba(0,0,0,.28)';
-    ctx.shadowBlur = Math.max(2, 8*s);
     ctx.beginPath();
-    ctx.moveTo(-w*.49, 0);
-    ctx.lineTo(-w*.55, -h*.30);
-    ctx.lineTo(-w*.42, -h*.53);
-    ctx.lineTo(w*.42, -h*.53);
-    ctx.lineTo(w*.55, -h*.30);
-    ctx.lineTo(w*.49, 0);
+    ctx.ellipse(-w*.47, -h*.17, 15*s, wheelR, -.08, 0, Math.PI*2);
+    ctx.ellipse(w*.47, -h*.17, 15*s, wheelR, .08, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#aeb6bf';
+    ctx.beginPath();
+    ctx.ellipse(-w*.47, -h*.17, 6.5*s, 10*s, -.08, 0, Math.PI*2);
+    ctx.ellipse(w*.47, -h*.17, 6.5*s, 10*s, .08, 0, Math.PI*2);
+    ctx.fill();
+
+    const body = ctx.createLinearGradient(-w/2, -h, w/2, 5);
+    body.addColorStop(0, shadeColor(car.color, 45));
+    body.addColorStop(.48, car.color);
+    body.addColorStop(1, shadeColor(car.color, -36));
+
+    ctx.fillStyle = body;
+    ctx.shadowColor = 'rgba(0,0,0,.25)';
+    ctx.shadowBlur = Math.max(2, 12*s);
+    ctx.beginPath();
+    ctx.moveTo(-w*.48, 4*s);
+    ctx.lineTo(-w*.55, -h*.25);
+    ctx.lineTo(-w*.47, -h*.55);
+    ctx.lineTo(-w*.34, -h*.84);
+    ctx.lineTo(-w*.24, -h*.96);
+    ctx.lineTo(w*.24, -h*.96);
+    ctx.lineTo(w*.34, -h*.84);
+    ctx.lineTo(w*.47, -h*.55);
+    ctx.lineTo(w*.55, -h*.25);
+    ctx.lineTo(w*.48, 4*s);
     ctx.closePath();
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Side panels
-    ctx.fillStyle = shadeColor(car.color, -24);
+    ctx.fillStyle = shadeColor(car.color, -48);
     ctx.beginPath();
-    ctx.moveTo(-w*.49, 0);
-    ctx.lineTo(-w*.55, -h*.30);
-    ctx.lineTo(-w*.42, -h*.53);
-    ctx.lineTo(-w*.30, -h*.46);
-    ctx.lineTo(-w*.36, -h*.10);
+    ctx.moveTo(-w*.48, 4*s);
+    ctx.lineTo(-w*.55, -h*.25);
+    ctx.lineTo(-w*.47, -h*.55);
+    ctx.lineTo(-w*.33, -h*.48);
+    ctx.lineTo(-w*.38, -h*.10);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = shadeColor(car.color, 14);
+    ctx.fillStyle = shadeColor(car.color, 22);
     ctx.beginPath();
-    ctx.moveTo(w*.49, 0);
-    ctx.lineTo(w*.55, -h*.30);
-    ctx.lineTo(w*.42, -h*.53);
-    ctx.lineTo(w*.30, -h*.46);
-    ctx.lineTo(w*.36, -h*.10);
+    ctx.moveTo(w*.48, 4*s);
+    ctx.lineTo(w*.55, -h*.25);
+    ctx.lineTo(w*.47, -h*.55);
+    ctx.lineTo(w*.33, -h*.48);
+    ctx.lineTo(w*.38, -h*.10);
     ctx.closePath();
     ctx.fill();
 
-    // Cabin / roof
-    ctx.fillStyle = car.color;
+    // نفس سقف وزجاج سيارة اللاعب.
+    ctx.fillStyle = '#11171d';
     ctx.beginPath();
-    ctx.moveTo(-w*.35, -h*.53);
-    ctx.lineTo(-w*.24, -h*.88);
-    ctx.lineTo(-w*.17, -h*.97);
-    ctx.lineTo(w*.17, -h*.97);
-    ctx.lineTo(w*.24, -h*.88);
-    ctx.lineTo(w*.35, -h*.53);
+    ctx.moveTo(-w*.31, -h*.57);
+    ctx.lineTo(-w*.22, -h*.88);
+    ctx.lineTo(-w*.16, -h*.98);
+    ctx.lineTo(w*.16, -h*.98);
+    ctx.lineTo(w*.22, -h*.88);
+    ctx.lineTo(w*.31, -h*.57);
     ctx.closePath();
     ctx.fill();
 
-    // Rear window
-    ctx.fillStyle = '#14232e';
+    ctx.fillStyle = '#132a38';
     ctx.beginPath();
-    ctx.moveTo(-w*.25, -h*.58);
+    ctx.moveTo(-w*.25, -h*.61);
     ctx.lineTo(-w*.18, -h*.86);
     ctx.lineTo(w*.18, -h*.86);
-    ctx.lineTo(w*.25, -h*.58);
+    ctx.lineTo(w*.25, -h*.61);
     ctx.closePath();
     ctx.fill();
 
-    // Glass reflection
-    ctx.fillStyle = 'rgba(117,210,255,.18)';
+    ctx.fillStyle = 'rgba(112,208,255,.20)';
     ctx.beginPath();
-    ctx.moveTo(-w*.17, -h*.82);
-    ctx.lineTo(-w*.05, -h*.85);
-    ctx.lineTo(w*.08, -h*.62);
-    ctx.lineTo(-w*.08, -h*.62);
+    ctx.moveTo(-w*.16, -h*.82);
+    ctx.lineTo(-w*.04, -h*.85);
+    ctx.lineTo(w*.09, -h*.64);
+    ctx.lineTo(-w*.08, -h*.64);
     ctx.closePath();
     ctx.fill();
 
-    // Tail lights
-    ctx.fillStyle = '#ff3048';
-    ctx.shadowColor = '#ff3048';
-    ctx.shadowBlur = Math.max(1.5, 6*s);
+    ctx.strokeStyle = '#2f363d';
+    ctx.lineWidth = Math.max(1, 5*s);
     ctx.beginPath();
-    ctx.roundRect(-w*.40, -h*.39, w*.20, h*.10, Math.max(1,2*s));
-    ctx.roundRect(w*.20, -h*.39, w*.20, h*.10, Math.max(1,2*s));
+    ctx.moveTo(-w*.23, -h*.90);
+    ctx.lineTo(-w*.28, -h*.63);
+    ctx.moveTo(w*.23, -h*.90);
+    ctx.lineTo(w*.28, -h*.63);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(0,0,0,.10)';
+    ctx.fillRect(-w*.36, -h*.48, w*.72, h*.09);
+
+    ctx.fillStyle = '#ff243d';
+    ctx.shadowColor = '#ff243d';
+    ctx.shadowBlur = Math.max(2, 10*s);
+    ctx.beginPath();
+    ctx.roundRect(-w*.42, -h*.38, w*.22, h*.11, Math.max(1, 6*s));
+    ctx.roundRect(w*.20, -h*.38, w*.22, h*.11, Math.max(1, 6*s));
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Bumper + plate
-    ctx.fillStyle = '#1c2228';
-    ctx.fillRect(-w*.45, -h*.13, w*.90, h*.10);
-    ctx.fillStyle = '#e7edf2';
-    ctx.fillRect(-w*.13, -h*.24, w*.26, h*.08);
+    ctx.fillStyle = '#1a1f24';
+    ctx.beginPath();
+    ctx.moveTo(-w*.47, -h*.14);
+    ctx.lineTo(w*.47, -h*.14);
+    ctx.lineTo(w*.40, -h*.03);
+    ctx.lineTo(-w*.40, -h*.03);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#f4f6f7';
+    ctx.fillRect(-w*.15, -h*.24, w*.30, h*.09);
+
+    ctx.fillStyle = '#c7ccd1';
+    ctx.beginPath();
+    ctx.ellipse(-w*.30, -h*.01, 8*s, 4.5*s, 0, 0, Math.PI*2);
+    ctx.ellipse(w*.30, -h*.01, 8*s, 4.5*s, 0, 0, Math.PI*2);
+    ctx.fill();
 
     ctx.restore();
   }
