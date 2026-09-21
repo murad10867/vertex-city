@@ -3,7 +3,6 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 const canvas = document.getElementById('gameCanvas');
 const scoreEl = document.getElementById('score');
 const missionEl = document.getElementById('mission');
-const timeEl = document.getElementById('time');
 const speedEl = document.getElementById('speed');
 const bestEl = document.getElementById('best');
 const modeEl = document.getElementById('modeValue');
@@ -50,7 +49,15 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) roadLines.push(i * ROAD_SPACIN
 
 const keys = Object.create(null);
 const buildingBoxes = [];
+const buildingEntrances = [];
 const traffic = [];
+
+const cityGroup = new THREE.Group();
+scene.add(cityGroup);
+
+const interiorGroup = new THREE.Group();
+interiorGroup.visible = false;
+scene.add(interiorGroup);
 let running = false;
 let last = 0;
 let elapsed = 0;
@@ -66,6 +73,7 @@ let walker;
 let missionMarker;
 let currentMission = new THREE.Vector3(0, 0, 0);
 let cameraYawOffset = 0;
+let outsideReturn = null;
 
 function seededRandom(seed) {
   const x = Math.sin(seed * 999.91) * 43758.5453;
@@ -122,6 +130,7 @@ const facadeTextures = [
 
 function addCity() {
   buildingBoxes.length = 0;
+  buildingEntrances.length = 0;
 
   const grass = new THREE.Mesh(
     new THREE.PlaneGeometry(1180, 1180),
@@ -129,7 +138,7 @@ function addCity() {
   );
   grass.rotation.x = -Math.PI / 2;
   grass.receiveShadow = true;
-  scene.add(grass);
+  cityGroup.add(grass);
 
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x34393e, roughness: .98 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8b8b2, roughness: .96 });
@@ -140,20 +149,20 @@ function addCity() {
     const roadZ = new THREE.Mesh(new THREE.BoxGeometry(1180, .18, ROAD_WIDTH), roadMat);
     roadZ.position.set(0, .10, line);
     roadZ.receiveShadow = true;
-    scene.add(roadZ);
+    cityGroup.add(roadZ);
 
     const roadX = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, .18, 1180), roadMat);
     roadX.position.set(line, .11, 0);
     roadX.receiveShadow = true;
-    scene.add(roadX);
+    cityGroup.add(roadX);
 
     const centerZ = new THREE.Mesh(new THREE.BoxGeometry(1180, .025, .28), lineMat);
     centerZ.position.set(0, .22, line);
-    scene.add(centerZ);
+    cityGroup.add(centerZ);
 
     const centerX = new THREE.Mesh(new THREE.BoxGeometry(.28, .025, 1180), lineMat);
     centerX.position.set(line, .23, 0);
-    scene.add(centerX);
+    cityGroup.add(centerX);
   }
 
   const facadeMats = facadeTextures.map(tex => new THREE.MeshStandardMaterial({
@@ -200,7 +209,7 @@ function addCity() {
       );
       sidewalk.position.set(blockCX, .29, blockCZ);
       sidewalk.receiveShadow = true;
-      scene.add(sidewalk);
+      cityGroup.add(sidewalk);
 
       // Leave a wide pavement ring around all buildings.
       const safeMinX = blockMinX + SIDEWALK + BUILDING_MARGIN;
@@ -250,7 +259,7 @@ function addCity() {
         building.position.set(cx, bh / 2 + .58, cz);
         building.castShadow = true;
         building.receiveShadow = true;
-        scene.add(building);
+        cityGroup.add(building);
 
         if (bh > 105 && seededRandom(seed + i * 43) > .45) {
           const capH = 3 + seededRandom(seed + i * 47) * 4;
@@ -260,7 +269,7 @@ function addCity() {
           );
           cap.position.set(cx, bh + .58 + capH / 2, cz);
           cap.castShadow = true;
-          scene.add(cap);
+          cityGroup.add(cap);
         }
 
         buildingBoxes.push({
@@ -268,6 +277,49 @@ function addCity() {
           maxX: cx + bw / 2 + .7,
           minZ: cz - bd / 2 - .7,
           maxZ: cz + bd / 2 + .7
+        });
+
+        // Entrance faces the nearest outside edge of this city block.
+        const relX = cx - blockCX;
+        const relZ = cz - blockCZ;
+        const doorMat = new THREE.MeshStandardMaterial({
+          color: 0x382a20,
+          roughness: .75,
+          metalness: .05
+        });
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xffd447 });
+
+        let doorX = cx;
+        let doorZ = cz;
+        let enterX = cx;
+        let enterZ = cz;
+        let door;
+
+        if (Math.abs(relX) >= Math.abs(relZ)) {
+          const side = relX >= 0 ? 1 : -1;
+          doorX = cx + side * (bw / 2 + .10);
+          enterX = cx + side * (bw / 2 + 2.35);
+          door = new THREE.Mesh(new THREE.BoxGeometry(.24, 3.2, 1.8), doorMat);
+          door.position.set(doorX, 2.18, cz);
+        } else {
+          const side = relZ >= 0 ? 1 : -1;
+          doorZ = cz + side * (bd / 2 + .10);
+          enterZ = cz + side * (bd / 2 + 2.35);
+          door = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.2, .24), doorMat);
+          door.position.set(cx, 2.18, doorZ);
+        }
+
+        cityGroup.add(door);
+
+        const sign = new THREE.Mesh(new THREE.SphereGeometry(.25, 10, 8), glowMat);
+        sign.position.set(doorX, 4.05, doorZ);
+        cityGroup.add(sign);
+
+        buildingEntrances.push({
+          x: enterX,
+          z: enterZ,
+          doorX,
+          doorZ
         });
       }
 
@@ -301,14 +353,14 @@ function addCity() {
     tower.position.set(x, h / 2 + .58, z);
     tower.castShadow = true;
     tower.receiveShadow = true;
-    scene.add(tower);
+    cityGroup.add(tower);
 
     const crown = new THREE.Mesh(
       new THREE.BoxGeometry(w * .55, 6, d * .55),
       roofMat
     );
     crown.position.set(x, h + 3.6, z);
-    scene.add(crown);
+    cityGroup.add(crown);
 
     buildingBoxes.push({
       minX: x - w/2 - .7,
@@ -335,9 +387,143 @@ function addCity() {
       [mat, mat, roofMat, roofMat, mat, mat]
     );
     b.position.set(bx, bh / 2, bz);
-    scene.add(b);
+    cityGroup.add(b);
   }
 }
+function createInterior() {
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x8b7f72, roughness: .95 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xe2ded6, roughness: .92 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: 0x3b4652, roughness: .75 });
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x76513d, roughness: .9 });
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(22, .4, 22), floorMat);
+  floor.position.y = -.2;
+  floor.receiveShadow = true;
+  interiorGroup.add(floor);
+
+  const back = new THREE.Mesh(new THREE.BoxGeometry(22, 7, .5), wallMat);
+  back.position.set(0, 3.5, -11);
+  interiorGroup.add(back);
+
+  const left = new THREE.Mesh(new THREE.BoxGeometry(.5, 7, 22), wallMat);
+  left.position.set(-11, 3.5, 0);
+  interiorGroup.add(left);
+
+  const right = left.clone();
+  right.position.x = 11;
+  interiorGroup.add(right);
+
+  const frontLeft = new THREE.Mesh(new THREE.BoxGeometry(8.4, 7, .5), wallMat);
+  frontLeft.position.set(-6.8, 3.5, 11);
+  interiorGroup.add(frontLeft);
+
+  const frontRight = frontLeft.clone();
+  frontRight.position.x = 6.8;
+  interiorGroup.add(frontRight);
+
+  const topDoor = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.2, .5), wallMat);
+  topDoor.position.set(0, 5.9, 11);
+  interiorGroup.add(topDoor);
+
+  const exitDoor = new THREE.Mesh(
+    new THREE.BoxGeometry(3.5, 4.5, .22),
+    new THREE.MeshStandardMaterial({ color: 0x382a20, roughness: .75 })
+  );
+  exitDoor.position.set(0, 2.25, 10.72);
+  interiorGroup.add(exitDoor);
+
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 2), woodMat);
+  counter.position.set(0, .6, -6.6);
+  counter.castShadow = true;
+  interiorGroup.add(counter);
+
+  const sofa = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.4, 2.2), accentMat);
+  sofa.position.set(-5.2, .7, 1.8);
+  sofa.castShadow = true;
+  interiorGroup.add(sofa);
+
+  const table = new THREE.Mesh(new THREE.BoxGeometry(3, .35, 2), woodMat);
+  table.position.set(4.8, 1.1, 2.1);
+  table.castShadow = true;
+  interiorGroup.add(table);
+
+  const lamp = new THREE.PointLight(0xffe4b5, 38, 32);
+  lamp.position.set(0, 5.5, 0);
+  interiorGroup.add(lamp);
+
+  const lamp2 = new THREE.PointLight(0xc9e8ff, 22, 22);
+  lamp2.position.set(-7, 4.8, -5);
+  interiorGroup.add(lamp2);
+}
+
+function nearestEntrance(maxDistance = 3.5) {
+  if (!walker || !walker.visible) return null;
+
+  let nearest = null;
+  let best = maxDistance;
+
+  for (const entry of buildingEntrances) {
+    const dx = walker.position.x - entry.x;
+    const dz = walker.position.z - entry.z;
+    const d = Math.hypot(dx, dz);
+
+    if (d < best) {
+      best = d;
+      nearest = entry;
+    }
+  }
+
+  return nearest;
+}
+
+function enterBuilding(entry) {
+  if (!entry || mode !== 'walk') return;
+
+  outsideReturn = {
+    position: walker.position.clone(),
+    heading: walkHeading
+  };
+
+  mode = 'interior';
+  speed = 0;
+
+  cityGroup.visible = false;
+  playerCar.visible = false;
+  missionMarker.visible = false;
+  traffic.forEach(t => t.mesh.visible = false);
+
+  interiorGroup.visible = true;
+  walker.visible = true;
+  walker.position.set(0, 0, 7.2);
+  walkHeading = Math.PI;
+  walker.rotation.y = walkHeading;
+
+  updateHud();
+  updateCamera(true);
+}
+
+function exitBuilding() {
+  if (mode !== 'interior') return;
+
+  interiorGroup.visible = false;
+  cityGroup.visible = true;
+  playerCar.visible = true;
+  missionMarker.visible = true;
+  traffic.forEach(t => t.mesh.visible = true);
+
+  mode = 'walk';
+  walker.visible = true;
+
+  if (outsideReturn) {
+    walker.position.copy(outsideReturn.position);
+    walkHeading = outsideReturn.heading;
+    walker.rotation.y = walkHeading;
+  }
+
+  updateHud();
+  updateCamera(true);
+}
+
 function createCar(color = 0xffffff) {
   const group = new THREE.Group();
 
@@ -530,12 +716,20 @@ function placeMission() {
 function updateHud() {
   scoreEl.textContent = Math.floor(score);
   missionEl.textContent = mission;
-  timeEl.textContent = Math.floor(elapsed);
   speedEl.textContent = mode === 'drive' ? Math.round(Math.abs(speed) * 4.2) : 0;
-  modeEl.textContent = mode === 'drive' ? 'قيادة' : 'مشي';
 
-  const near = walker.visible && walker.position.distanceTo(playerCar.position) < 7;
-  actionBtn.textContent = mode === 'drive' ? 'E نزول' : (near ? 'E ركوب' : 'E السيارة بعيدة');
+  if (mode === 'drive') modeEl.textContent = 'قيادة';
+  else if (mode === 'interior') modeEl.textContent = 'داخل مبنى';
+  else modeEl.textContent = 'مشي';
+
+  const nearCar = mode === 'walk' && walker.visible && walker.position.distanceTo(playerCar.position) < 7;
+  const nearDoor = mode === 'walk' ? nearestEntrance(3.5) : null;
+
+  if (mode === 'drive') actionBtn.textContent = 'E نزول';
+  else if (mode === 'interior') actionBtn.textContent = 'E خروج';
+  else if (nearDoor) actionBtn.textContent = 'E دخول';
+  else if (nearCar) actionBtn.textContent = 'E ركوب';
+  else actionBtn.textContent = 'E';
 
   const best = Number(localStorage.getItem('vertexCity3DBest') || 0);
   if (score > best) localStorage.setItem('vertexCity3DBest', String(Math.floor(score)));
@@ -562,6 +756,12 @@ function reset() {
   walkBob = 0;
   mode = 'drive';
   cameraYawOffset = 0;
+  outsideReturn = null;
+
+  cityGroup.visible = true;
+  interiorGroup.visible = false;
+  missionMarker.visible = true;
+  traffic.forEach(t => t.mesh.visible = true);
 
   playerCar.position.set(0, 0, -36);
   playerCar.rotation.y = heading;
@@ -578,7 +778,7 @@ function reset() {
   showOverlay(
     '🏙️',
     'Vertex City 3D',
-    'مدينة واسعة مثل الفيديو: شوارع متعددة، مبانٍ عالية، قيادة ومشي حر.',
+    'استكشف المدينة بدون وقت: قيادة، مشي، ودخول المباني.',
     'ابدأ الاستكشاف',
     start
   );
@@ -594,6 +794,11 @@ function start() {
 function toggleMode() {
   if (!running) return;
 
+  if (mode === 'interior') {
+    exitBuilding();
+    return;
+  }
+
   if (mode === 'drive') {
     speed = 0;
     mode = 'walk';
@@ -603,8 +808,17 @@ function toggleMode() {
     walkHeading = heading;
     walker.rotation.y = walkHeading;
     walker.visible = true;
-  } else {
-    if (walker.position.distanceTo(playerCar.position) > 7) return;
+    updateHud();
+    return;
+  }
+
+  const entry = nearestEntrance(3.5);
+  if (entry) {
+    enterBuilding(entry);
+    return;
+  }
+
+  if (walker.position.distanceTo(playerCar.position) <= 7) {
     mode = 'drive';
     walker.visible = false;
     heading = playerCar.rotation.y;
@@ -613,7 +827,6 @@ function toggleMode() {
 
   updateHud();
 }
-
 function updateDrive(dt) {
   const forward = keys.w || keys.ArrowUp;
   const backward = keys.s || keys.ArrowDown;
@@ -662,19 +875,27 @@ function updateWalk(dt) {
   if (move) {
     const dir = new THREE.Vector3(Math.sin(walkHeading), 0, Math.cos(walkHeading));
     const candidate = walker.position.clone().addScaledVector(dir, move * 8.4 * dt);
-    if (!isInsideBuilding(candidate.x, candidate.z, .8)) {
+
+    if (mode === 'interior') {
+      candidate.x = THREE.MathUtils.clamp(candidate.x, -9.2, 9.2);
+      candidate.z = THREE.MathUtils.clamp(candidate.z, -9.2, 9.2);
+      walker.position.copy(candidate);
+    } else if (!isInsideBuilding(candidate.x, candidate.z, .8)) {
       walker.position.copy(candidate);
     }
+
     walkBob += dt * 10;
     score += Math.abs(move) * dt * .22;
   }
 
-  clampCity(walker.position);
+  if (mode !== 'interior') clampCity(walker.position);
   walker.rotation.y = walkHeading;
   walker.position.y = Math.sin(walkBob) * .035;
 }
 
 function updateTraffic(dt) {
+  if (mode === 'interior') return;
+
   for (const t of traffic) {
     if (t.alongZ) {
       t.mesh.position.z += t.dir * t.speed * dt;
@@ -702,6 +923,8 @@ function updateTraffic(dt) {
 }
 
 function updateMission(dt) {
+  if (mode === 'interior') return;
+
   missionMarker.rotation.y += dt * .7;
   missionMarker.position.y = .2 + Math.sin(elapsed * 2.4) * .25;
 
@@ -716,8 +939,8 @@ function updateMission(dt) {
 function updateCamera(force = false) {
   const active = mode === 'drive' ? playerCar : walker;
   const ang = mode === 'drive' ? heading + cameraYawOffset : walkHeading + cameraYawOffset;
-  const dist = mode === 'drive' ? 19 : 9;
-  const height = mode === 'drive' ? 10.5 : 6.4;
+  const dist = mode === 'drive' ? 19 : (mode === 'interior' ? 6.7 : 9);
+  const height = mode === 'drive' ? 10.5 : (mode === 'interior' ? 4.8 : 6.4);
 
   const offset = new THREE.Vector3(
     -Math.sin(ang) * dist,
@@ -805,6 +1028,8 @@ function bindControls() {
 }
 
 addCity();
+createInterior();
+
 playerCar = createCar(0xe8edf1);
 scene.add(playerCar);
 
