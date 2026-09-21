@@ -172,10 +172,11 @@ function addCity() {
   // Dense downtown blocks, closely packed like the reference video.
   for (let gx = -GRID_RADIUS; gx < GRID_RADIUS; gx++) {
     for (let gz = -GRID_RADIUS; gz < GRID_RADIUS; gz++) {
-      const x0 = gx * ROAD_SPACING + ROAD_WIDTH / 2 + 2;
-      const x1 = (gx + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 2;
-      const z0 = gz * ROAD_SPACING + ROAD_WIDTH / 2 + 2;
-      const z1 = (gz + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 2;
+      const BUILDING_SETBACK = 10;
+      const x0 = gx * ROAD_SPACING + ROAD_WIDTH / 2 + BUILDING_SETBACK;
+      const x1 = (gx + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - BUILDING_SETBACK;
+      const z0 = gz * ROAD_SPACING + ROAD_WIDTH / 2 + BUILDING_SETBACK;
+      const z1 = (gz + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - BUILDING_SETBACK;
       const blockW = x1 - x0;
       const blockD = z1 - z0;
       const cx = (x0 + x1) / 2;
@@ -204,7 +205,7 @@ function addCity() {
       ];
 
       // Keep some gaps/mini courtyards, but most blocks are packed.
-      const count = 5 + Math.floor(seededRandom(seed++) * 4);
+      const count = 4 + Math.floor(seededRandom(seed++) * 3);
       const used = slots
         .map((slot, idx) => ({slot, r: seededRandom(seed * 13 + idx * 5)}))
         .sort((a,b) => a.r - b.r)
@@ -217,10 +218,10 @@ function addCity() {
         let bh = 46 + seededRandom(seed + i * 17) * 78 + centerBoost * 34;
         if (highRise > .82) bh += 65 + seededRandom(seed + i * 41) * 70;
 
-        const bw = 18 + seededRandom(seed + i * 3) * 10;
-        const bd = 18 + seededRandom(seed + i * 7) * 10;
-        const bx = cx + slot[0] * blockW * 1.48;
-        const bz = cz + slot[1] * blockD * 1.48;
+        const bw = 14 + seededRandom(seed + i * 3) * 8;
+        const bd = 14 + seededRandom(seed + i * 7) * 8;
+        const bx = cx + slot[0] * blockW * 1.12;
+        const bz = cz + slot[1] * blockD * 1.12;
 
         const mat = facadeMats[Math.floor(seededRandom(seed + i * 23) * facadeMats.length)];
         const roofMat = roofMats[Math.floor(seededRandom(seed + i * 31) * roofMats.length)];
@@ -247,10 +248,10 @@ function addCity() {
         }
 
         buildingBoxes.push({
-          minX: bx - bw/2 - 1.1,
-          maxX: bx + bw/2 + 1.1,
-          minZ: bz - bd/2 - 1.1,
-          maxZ: bz + bd/2 + 1.1
+          minX: bx - bw/2 - 0.6,
+          maxX: bx + bw/2 + 0.6,
+          minZ: bz - bd/2 - 0.6,
+          maxZ: bz + bd/2 + 0.6
         });
       });
 
