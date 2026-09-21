@@ -9,6 +9,8 @@
   const timeEl = document.getElementById('time');
   const speedEl = document.getElementById('speed');
   const bestEl = document.getElementById('best');
+  const modeEl = document.getElementById('modeValue');
+  const actionBtn = document.getElementById('actionBtn');
 
   const overlay = document.getElementById('overlay');
   const overlayIcon = document.getElementById('overlayIcon');
@@ -40,6 +42,9 @@
   let traffic = [];
   let buildings = [];
   let stars = [];
+  let mode = 'drive';
+  let parkedCar = null;
+  let walkBob = 0;
 
   function randomLane() {
     return lanes[Math.floor(Math.random() * lanes.length)];
@@ -94,7 +99,9 @@
     scoreEl.textContent = Math.floor(score);
     missionEl.textContent = mission;
     timeEl.textContent = Math.max(0, Math.ceil(timeLeft));
-    speedEl.textContent = Math.round(speed);
+    speedEl.textContent = mode === 'drive' ? Math.round(speed) : 0;
+    modeEl.textContent = mode === 'drive' ? 'قيادة' : 'مشي';
+    actionBtn.textContent = mode === 'drive' ? 'E نزول' : 'E ركوب';
     bestEl.textContent = localStorage.getItem('vertexCity3DBest') || '0';
   }
 
@@ -107,6 +114,9 @@
     timeLeft = 90;
     distance = 0;
     shake = 0;
+    mode = 'drive';
+    parkedCar = null;
+    walkBob = 0;
     target = { z: 760, x: randomLane() };
     makeWorld();
     hud();
@@ -162,6 +172,37 @@
     return { x: W/2 - playerX*p.roadHalf*.72 + side*p.roadHalf, y:p.y };
   }
 
+  function distanceToParkedCar() {
+    if (!parkedCar) return Infinity;
+    return Math.hypot((playerX - parkedCar.x) * 180, parkedCar.z - 70);
+  }
+
+  function toggleMode() {
+    if (!running) return;
+
+    if (mode === 'drive') {
+      speed = 0;
+      mode = 'walk';
+      parkedCar = {
+        x: playerX,
+        z: 92,
+        speed: 0,
+        color: '#dfe5ea'
+      };
+      walkBob = 0;
+      hud();
+      return;
+    }
+
+    if (parkedCar && parkedCar.z > 18 && parkedCar.z < 155 && Math.abs(playerX - parkedCar.x) < 0.46) {
+      mode = 'drive';
+      playerX = parkedCar.x;
+      parkedCar = null;
+      speed = 0;
+      hud();
+    }
+  }
+
   function update(dt) {
     timeLeft -= dt;
     if (timeLeft <= 0) {
@@ -169,37 +210,67 @@
       return;
     }
 
-    const accelerate = keys.ArrowUp || keys.w;
-    const brake = keys.ArrowDown || keys.s;
+    const up = keys.ArrowUp || keys.w;
+    const down = keys.ArrowDown || keys.s;
     const left = keys.ArrowLeft || keys.a;
     const right = keys.ArrowRight || keys.d;
 
-    if (accelerate) speed += 190 * dt;
-    else speed -= 42 * dt;
+    let travel = 0;
 
-    if (brake) speed -= 260 * dt;
+    if (mode === 'drive') {
+      if (up) speed += 190 * dt;
+      else speed -= 42 * dt;
 
-    speed = Math.max(0, Math.min(360, speed));
+      if (down) speed -= 260 * dt;
 
-    const steer = (left ? -1 : 0) + (right ? 1 : 0);
-    if (steer) {
-      const steerPower = 1.05 + speed / 420;
-      playerX += steer * steerPower * dt;
+      speed = Math.max(0, Math.min(360, speed));
+
+      const steer = (left ? -1 : 0) + (right ? 1 : 0);
+      if (steer) {
+        const steerPower = 1.05 + speed / 420;
+        playerX += steer * steerPower * dt;
+      }
+      playerX = Math.max(-1.35, Math.min(1.35, playerX));
+
+      travel = speed * dt * 1.5;
+      score += speed * dt * 0.018;
+    } else {
+      speed = 0;
+
+      const forward = (up ? 1 : 0) + (down ? -1 : 0);
+      const sideways = (right ? 1 : 0) + (left ? -1 : 0);
+
+      travel = forward * 105 * dt;
+      playerX += sideways * 1.38 * dt;
+      playerX = Math.max(-2.35, Math.min(2.35, playerX));
+
+      if (forward || sideways) {
+        walkBob += dt * 10;
+        score += Math.abs(travel) * 0.012;
+      }
     }
-    playerX = Math.max(-1.35, Math.min(1.35, playerX));
 
-    const travel = speed * dt * 1.5;
     distance += travel;
     target.z -= travel;
 
     for (const b of buildings) {
       b.z -= travel;
       if (b.z < 45) b.z += 2550;
+      if (b.z > 2700) b.z -= 2550;
+    }
+
+    if (parkedCar) {
+      parkedCar.z -= travel;
     }
 
     for (let i = 0; i < traffic.length; i++) {
       const car = traffic[i];
-      car.z -= Math.max(25, speed - car.speed) * dt * 1.4;
+
+      if (mode === 'drive') {
+        car.z -= Math.max(25, speed - car.speed) * dt * 1.4;
+      } else {
+        car.z -= car.speed * dt * 0.18 + travel;
+      }
 
       if (car.z < 24) {
         car.z = VIEW_DISTANCE + 180 + Math.random() * 500;
@@ -207,7 +278,12 @@
         car.speed = 120 + Math.random() * 105;
       }
 
-      if (car.z < 92 && car.z > 25 && Math.abs(car.x - playerX) < 0.31) {
+      if (car.z > VIEW_DISTANCE + 700) {
+        car.z = 180 + Math.random() * 500;
+        car.x = randomLane();
+      }
+
+      if (mode === 'drive' && car.z < 92 && car.z > 25 && Math.abs(car.x - playerX) < 0.31) {
         speed *= 0.42;
         score = Math.max(0, score - 80);
         shake = 0.35;
@@ -217,7 +293,7 @@
     }
 
     if (target.z < 82) {
-      if (Math.abs(target.x - playerX) < 0.34) {
+      if (Math.abs(target.x - playerX) < (mode === 'walk' ? 0.42 : 0.34)) {
         score += 320 + Math.ceil(timeLeft) * 2;
         mission++;
       } else {
@@ -227,11 +303,9 @@
       target.x = randomLane();
     }
 
-    score += speed * dt * 0.018;
     shake = Math.max(0, shake - dt);
     hud();
   }
-
   function drawSky() {
     const sky = ctx.createLinearGradient(0, 0, 0, HORIZON + 80);
     sky.addColorStop(0, '#77b9e8');
@@ -271,6 +345,29 @@
     const farR = roadPoint(VIEW_DISTANCE, 1);
     const nearL = roadPoint(1, -1);
     const nearR = roadPoint(1, 1);
+
+    // Sidewalks
+    const farLL = roadPoint(VIEW_DISTANCE, -1.18);
+    const farRR = roadPoint(VIEW_DISTANCE, 1.18);
+    const nearLL = roadPoint(1, -1.18);
+    const nearRR = roadPoint(1, 1.18);
+
+    ctx.fillStyle = '#a8adb1';
+    ctx.beginPath();
+    ctx.moveTo(farLL.x, farLL.y);
+    ctx.lineTo(farL.x, farL.y);
+    ctx.lineTo(nearL.x, nearL.y);
+    ctx.lineTo(nearLL.x, nearLL.y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(farR.x, farR.y);
+    ctx.lineTo(farRR.x, farRR.y);
+    ctx.lineTo(nearRR.x, nearRR.y);
+    ctx.lineTo(nearR.x, nearR.y);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.fillStyle = '#30343a';
     ctx.beginPath();
@@ -700,6 +797,84 @@
 
     ctx.restore();
   }
+  function drawWalker() {
+    const x = W / 2;
+    const bob = Math.sin(walkBob) * 3;
+    const y = H - 72 + bob;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    ctx.beginPath();
+    ctx.ellipse(0, 22, 24, 8, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#17212a';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-7, 5);
+    ctx.lineTo(-11, 27);
+    ctx.moveTo(7, 5);
+    ctx.lineTo(11, 27);
+    ctx.stroke();
+
+    ctx.fillStyle = '#4c79ff';
+    ctx.beginPath();
+    ctx.roundRect(-18, -42, 36, 50, 12);
+    ctx.fill();
+
+    ctx.fillStyle = '#f0c7a4';
+    ctx.beginPath();
+    ctx.arc(0, -57, 15, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#17212a';
+    ctx.beginPath();
+    ctx.arc(0, -61, 15, Math.PI, Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f0c7a4';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-15, -28);
+    ctx.lineTo(-25, -6);
+    ctx.moveTo(15, -28);
+    ctx.lineTo(25, -6);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawWalkHint() {
+    if (mode !== 'walk') return;
+
+    const nearCar = parkedCar &&
+      parkedCar.z > 18 &&
+      parkedCar.z < 155 &&
+      Math.abs(playerX - parkedCar.x) < 0.46;
+
+    ctx.save();
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const text = nearCar
+      ? 'اضغط E للركوب'
+      : 'تمشَّ بالأسهم أو WASD — ارجع لسيارتك للركوب';
+
+    const width = Math.min(W - 40, ctx.measureText(text).width + 36);
+    ctx.fillStyle = 'rgba(7,16,24,.76)';
+    ctx.beginPath();
+    ctx.roundRect(W/2-width/2, 20, width, 42, 14);
+    ctx.fill();
+
+    ctx.fillStyle = nearCar ? '#ffd447' : '#ffffff';
+    ctx.fillText(text, W/2, 41);
+    ctx.restore();
+  }
+
   function drawSpeedLines() {
     if (speed < 180) return;
     const alpha = Math.min(.28, (speed-180)/500);
@@ -732,8 +907,19 @@
     const visibleCars = traffic.filter(c => c.z > 22 && c.z < VIEW_DISTANCE).sort((a,b)=>b.z-a.z);
     visibleCars.forEach(drawTrafficCar);
 
+    if (mode === 'walk' && parkedCar && parkedCar.z > 22 && parkedCar.z < VIEW_DISTANCE) {
+      drawTrafficCar(parkedCar);
+    }
+
     drawSpeedLines();
-    drawPlayerCar();
+
+    if (mode === 'drive') {
+      drawPlayerCar();
+    } else {
+      drawWalker();
+      drawWalkHint();
+    }
+
     ctx.restore();
   }
 
@@ -748,7 +934,17 @@
 
   document.addEventListener('keydown', event => {
     const key = event.key.toLowerCase();
-    if (['arrowup','arrowdown','arrowleft','arrowright'].includes(key)) event.preventDefault();
+
+    if (['arrowup','arrowdown','arrowleft','arrowright'].includes(key)) {
+      event.preventDefault();
+    }
+
+    if (key === 'e' && !event.repeat) {
+      event.preventDefault();
+      toggleMode();
+      return;
+    }
+
     keys[event.key] = true;
     keys[key] = true;
   }, { passive:false });
@@ -767,6 +963,7 @@
     });
   });
 
+  actionBtn.addEventListener('click', toggleMode);
   restartBtn.addEventListener('click', reset);
   reset();
 })();
