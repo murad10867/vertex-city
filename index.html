@@ -6,23 +6,23 @@
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101820">
-  <meta name="description" content="Vertex City">
-  <title>Vertex City</title>
+  <meta name="description" content="Vertex City 3D">
+  <title>Vertex City 3D</title>
   <link rel="stylesheet" href="style.css">
   <script src="security.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span>🌆</span><div><strong>Vertex City</strong><small>Vertex Games</small></div></div>
+    <div class="brand"><span>🌆</span><div><strong>Vertex City 3D</strong><small>Vertex Games</small></div></div>
     <button id="restartBtn">إعادة</button>
   </header>
 
   <main class="page">
     <section class="hero">
-      <span>OPEN CITY</span>
-      <h1>Vertex City</h1>
-      <p>قد السيارة داخل المدينة، نفذ التوصيلات، واجمع أكبر عدد من النقاط.</p>
+      <span>3D OPEN CITY</span>
+      <h1>Vertex City 3D</h1>
+      <p>قد السيارة داخل مدينة ثلاثية الأبعاد، تجاوز السيارات ونفذ التوصيلات.</p>
     </section>
 
     <section class="game-layout">
@@ -30,17 +30,18 @@
         <div><span>النقاط</span><strong id="score">0</strong></div>
         <div><span>المهمة</span><strong id="mission">1</strong></div>
         <div><span>الوقت</span><strong id="time">90</strong></div>
+        <div><span>السرعة</span><strong><span id="speed">0</span> km/h</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
-        <p>تحرك بالأسهم أو WASD.<br>اذهب إلى العلامة الصفراء ✦ لإكمال المهمة.</p>
+        <p>↑ أو W للتسارع، ↓ أو S للفرامل، و ← → أو A / D للتوجيه.<br>مر من البوابة الصفراء لإكمال المهمة.</p>
       </aside>
 
       <section class="game-card">
-        <canvas id="gameCanvas" width="900" height="650"></canvas>
+        <canvas id="gameCanvas" width="960" height="600"></canvas>
         <div id="overlay" class="overlay show">
           <div>
-            <span id="overlayIcon">🚕</span>
-            <h2 id="overlayTitle">جاهز للمدينة؟</h2>
-            <p id="overlayText">نفذ أكبر عدد من التوصيلات خلال 90 ثانية.</p>
+            <span id="overlayIcon">🏎️</span>
+            <h2 id="overlayTitle">جاهز لـ Vertex City 3D؟</h2>
+            <p id="overlayText">قد داخل المدينة، تجنب السيارات، ومر من بوابات المهمات.</p>
             <button id="startBtn">ابدأ</button>
           </div>
         </div>
