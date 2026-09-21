@@ -72,8 +72,8 @@
     }));
 
     traffic = [];
-    for (let i = 0; i < 10; i++) {
-      traffic.push(makeTraffic(500 + i * 180 + Math.random() * 120));
+    for (let i = 0; i < 5; i++) {
+      traffic.push(makeTraffic(650 + i * 320 + Math.random() * 140));
     }
   }
 
@@ -273,7 +273,7 @@
       }
 
       if (car.z < 24) {
-        car.z = VIEW_DISTANCE + 180 + Math.random() * 500;
+        car.z = VIEW_DISTANCE + 350 + Math.random() * 700;
         car.x = randomLane();
         car.speed = 120 + Math.random() * 105;
       }
