@@ -358,8 +358,8 @@
     if (car.z <= 22 || car.z > VIEW_DISTANCE) return;
     const p = project(car.z, car.x);
     const s = Math.max(.12, p.scale);
-    const w = 66 * s;
-    const h = 88 * s;
+    const w = 112 * s;
+    const h = 142 * s;
 
     ctx.save();
     ctx.translate(p.x, p.y);
