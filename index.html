@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101820">
@@ -10,7 +10,7 @@
   <title>Vertex City 3D</title>
   <link rel="stylesheet" href="style.css?v=20260921-walk1">
   <script src="security.js" defer></script>
-  <script src="game.js?v=20260921-lighttraffic" defer></script>
+  <script type="module" src="game.js?v=20260921-real3dcity"></script>
 </head>
 <body>
   <header class="topbar">
@@ -22,18 +22,18 @@
     <section class="hero">
       <span>3D OPEN CITY</span>
       <h1>Vertex City 3D</h1>
-      <p>قد السيارة داخل مدينة ثلاثية الأبعاد، تجاوز السيارات ونفذ التوصيلات.</p>
+      <p>مدينة 3D واسعة بشوارع ومبانٍ عالية. قد السيارة أو انزل وتمشَّ بحرية.</p>
     </section>
 
     <section class="game-layout">
       <aside class="panel">
         <div><span>النقاط</span><strong id="score">0</strong></div>
         <div><span>المهمة</span><strong id="mission">1</strong></div>
-        <div><span>الوقت</span><strong id="time">90</strong></div>
+        <div><span>الوقت</span><strong id="time">0</strong></div>
         <div><span>السرعة</span><strong><span id="speed">0</span> km/h</strong></div>
         <div><span>الوضع</span><strong id="modeValue">قيادة</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
-        <p>بالسيارة: ↑ أو W للتسارع و ← → للتوجيه.<br>اضغط E للنزول والمشي، ثم اقترب من سيارتك واضغط E للركوب.</p>
+        <p>بالسيارة: W/S للحركة و A/D للالتفاف.<br>اضغط E للنزول والمشي، ثم اقترب من سيارتك واضغط E للركوب.</p>
       </aside>
 
       <section class="game-card">
@@ -42,7 +42,7 @@
           <div>
             <span id="overlayIcon">🏎️</span>
             <h2 id="overlayTitle">جاهز لـ Vertex City 3D؟</h2>
-            <p id="overlayText">قد داخل المدينة، تجنب السيارات، ومر من بوابات المهمات.</p>
+            <p id="overlayText">استكشف المدينة 3D، قد بين الشوارع، وانزل من السيارة وتمشَّ بين المباني.</p>
             <button id="startBtn">ابدأ</button>
           </div>
         </div>
