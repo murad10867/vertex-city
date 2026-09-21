@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <meta name="description" content="Vertex City">
+  <title>Vertex City</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="security.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>🌆</span><div><strong>Vertex City</strong><small>Vertex Games</small></div></div>
+    <button id="restartBtn">إعادة</button>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <span>OPEN CITY</span>
+      <h1>Vertex City</h1>
+      <p>قد السيارة داخل المدينة، نفذ التوصيلات، واجمع أكبر عدد من النقاط.</p>
+    </section>
+
+    <section class="game-layout">
+      <aside class="panel">
+        <div><span>النقاط</span><strong id="score">0</strong></div>
+        <div><span>المهمة</span><strong id="mission">1</strong></div>
+        <div><span>الوقت</span><strong id="time">90</strong></div>
+        <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
+        <p>تحرك بالأسهم أو WASD.<br>اذهب إلى العلامة الصفراء ✦ لإكمال المهمة.</p>
+      </aside>
+
+      <section class="game-card">
+        <canvas id="gameCanvas" width="900" height="650"></canvas>
+        <div id="overlay" class="overlay show">
+          <div>
+            <span id="overlayIcon">🚕</span>
+            <h2 id="overlayTitle">جاهز للمدينة؟</h2>
+            <p id="overlayText">نفذ أكبر عدد من التوصيلات خلال 90 ثانية.</p>
+            <button id="startBtn">ابدأ</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="mobile-controls">
+      <button data-dir="up">↑</button>
+      <div>
+        <button data-dir="left">←</button>
+        <button data-dir="down">↓</button>
+        <button data-dir="right">→</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Vertex Systems AI © 2026</footer>
+</body>
+</html>
