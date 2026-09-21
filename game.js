@@ -121,6 +121,8 @@ const facadeTextures = [
 ];
 
 function addCity() {
+  buildingBoxes.length = 0;
+
   const grass = new THREE.Mesh(
     new THREE.PlaneGeometry(1180, 1180),
     new THREE.MeshStandardMaterial({ color: 0x6f8e69, roughness: 1 })
@@ -129,11 +131,11 @@ function addCity() {
   grass.receiveShadow = true;
   scene.add(grass);
 
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x3a4045, roughness: .96 });
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x34393e, roughness: .98 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8b8b2, roughness: .96 });
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xe8e7de });
-  const curbMat = new THREE.MeshStandardMaterial({ color: 0xd2d0c7, roughness: 1 });
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xf0eee5 });
 
+  // Draw every road first. Buildings are generated only inside the blocks BETWEEN roads.
   for (const line of roadLines) {
     const roadZ = new THREE.Mesh(new THREE.BoxGeometry(1180, .18, ROAD_WIDTH), roadMat);
     roadZ.position.set(0, .10, line);
@@ -154,12 +156,13 @@ function addCity() {
     scene.add(centerX);
   }
 
-  const facadeMats = facadeTextures.map((tex, i) => new THREE.MeshStandardMaterial({
+  const facadeMats = facadeTextures.map(tex => new THREE.MeshStandardMaterial({
     map: tex,
     color: 0xffffff,
     roughness: .84,
-    metalness: i === 0 ? .05 : .02
+    metalness: .02
   }));
+
   const roofMats = [
     new THREE.MeshStandardMaterial({ color: 0x777b7d, roughness: .96 }),
     new THREE.MeshStandardMaterial({ color: 0x9b7a67, roughness: .96 }),
@@ -167,73 +170,75 @@ function addCity() {
     new THREE.MeshStandardMaterial({ color: 0x887f73, roughness: .96 })
   ];
 
-  let seed = 31;
+  let seed = 41;
+  const ROAD_EDGE = ROAD_WIDTH / 2;
+  const SIDEWALK = 7;
+  const BUILDING_MARGIN = 4;
 
-  // Dense downtown blocks, closely packed like the reference video.
+  // One safe rectangle per city block. Nothing is allowed to cross this rectangle.
   for (let gx = -GRID_RADIUS; gx < GRID_RADIUS; gx++) {
     for (let gz = -GRID_RADIUS; gz < GRID_RADIUS; gz++) {
-      const BUILDING_SETBACK = 10;
-      const x0 = gx * ROAD_SPACING + ROAD_WIDTH / 2 + BUILDING_SETBACK;
-      const x1 = (gx + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - BUILDING_SETBACK;
-      const z0 = gz * ROAD_SPACING + ROAD_WIDTH / 2 + BUILDING_SETBACK;
-      const z1 = (gz + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - BUILDING_SETBACK;
-      const blockW = x1 - x0;
-      const blockD = z1 - z0;
-      const cx = (x0 + x1) / 2;
-      const cz = (z0 + z1) / 2;
+      const roadLeft = gx * ROAD_SPACING;
+      const roadRight = (gx + 1) * ROAD_SPACING;
+      const roadTop = gz * ROAD_SPACING;
+      const roadBottom = (gz + 1) * ROAD_SPACING;
 
+      const blockMinX = roadLeft + ROAD_EDGE;
+      const blockMaxX = roadRight - ROAD_EDGE;
+      const blockMinZ = roadTop + ROAD_EDGE;
+      const blockMaxZ = roadBottom - ROAD_EDGE;
+
+      const blockCX = (blockMinX + blockMaxX) / 2;
+      const blockCZ = (blockMinZ + blockMaxZ) / 2;
+      const blockW = blockMaxX - blockMinX;
+      const blockD = blockMaxZ - blockMinZ;
+
+      // Sidewalk fills the whole non-road block.
       const sidewalk = new THREE.Mesh(
-        new THREE.BoxGeometry(blockW + 5, .6, blockD + 5),
+        new THREE.BoxGeometry(blockW, .48, blockD),
         sidewalkMat
       );
-      sidewalk.position.set(cx, .30, cz);
+      sidewalk.position.set(blockCX, .29, blockCZ);
       sidewalk.receiveShadow = true;
       scene.add(sidewalk);
 
-      const curb = new THREE.Mesh(
-        new THREE.BoxGeometry(blockW + 6.5, .16, blockD + 6.5),
-        curbMat
-      );
-      curb.position.set(cx, .60, cz);
-      curb.receiveShadow = true;
-      scene.add(curb);
+      // Leave a wide pavement ring around all buildings.
+      const safeMinX = blockMinX + SIDEWALK + BUILDING_MARGIN;
+      const safeMaxX = blockMaxX - SIDEWALK - BUILDING_MARGIN;
+      const safeMinZ = blockMinZ + SIDEWALK + BUILDING_MARGIN;
+      const safeMaxZ = blockMaxZ - SIDEWALK - BUILDING_MARGIN;
 
-      const slots = [
-        [-.29,-.29],[0,-.29],[.29,-.29],
-        [-.29,0],[0,0],[.29,0],
-        [-.29,.29],[0,.29],[.29,.29]
+      const safeW = safeMaxX - safeMinX;
+      const safeD = safeMaxZ - safeMinZ;
+      if (safeW < 20 || safeD < 20) continue;
+
+      const centerBoost = 1 - Math.min(1, Math.hypot(blockCX, blockCZ) / 520);
+
+      // 2x2 layout only. This prevents any façade from entering a road.
+      const gap = 4;
+      const cellW = (safeW - gap) / 2;
+      const cellD = (safeD - gap) / 2;
+
+      const cellCenters = [
+        [safeMinX + cellW / 2, safeMinZ + cellD / 2],
+        [safeMaxX - cellW / 2, safeMinZ + cellD / 2],
+        [safeMinX + cellW / 2, safeMaxZ - cellD / 2],
+        [safeMaxX - cellW / 2, safeMaxZ - cellD / 2]
       ];
 
-      // Keep some gaps/mini courtyards, but most blocks are packed.
-      const count = 4 + Math.floor(seededRandom(seed++) * 3);
-      const used = slots
-        .map((slot, idx) => ({slot, r: seededRandom(seed * 13 + idx * 5)}))
-        .sort((a,b) => a.r - b.r)
-        .slice(0, count);
+      const count = 3 + (seededRandom(seed++) > .45 ? 1 : 0);
 
-      used.forEach((item, i) => {
-        const slot = item.slot;
-        const centerBoost = 1 - Math.min(1, Math.hypot(cx, cz) / 520);
-        const highRise = seededRandom(seed * 19 + i * 11);
-        let bh = 46 + seededRandom(seed + i * 17) * 78 + centerBoost * 34;
-        if (highRise > .82) bh += 65 + seededRandom(seed + i * 41) * 70;
+      for (let i = 0; i < count; i++) {
+        const [cx, cz] = cellCenters[i];
 
-        const bw = 14 + seededRandom(seed + i * 3) * 8;
-        const bd = 14 + seededRandom(seed + i * 7) * 8;
+        // Building size is always smaller than its cell.
+        const bw = Math.min(cellW - 3, 16 + seededRandom(seed + i * 7) * 5);
+        const bd = Math.min(cellD - 3, 16 + seededRandom(seed + i * 11) * 5);
 
-        // Keep every building completely inside its block so nothing enters the road.
-        const rawBx = cx + slot[0] * blockW;
-        const rawBz = cz + slot[1] * blockD;
-        const bx = THREE.MathUtils.clamp(
-          rawBx,
-          x0 + bw / 2 + 2.5,
-          x1 - bw / 2 - 2.5
-        );
-        const bz = THREE.MathUtils.clamp(
-          rawBz,
-          z0 + bd / 2 + 2.5,
-          z1 - bd / 2 - 2.5
-        );
+        let bh = 48 + seededRandom(seed + i * 17) * 72 + centerBoost * 30;
+        if (seededRandom(seed + i * 29) > .86) {
+          bh += 55 + seededRandom(seed + i * 37) * 55;
+        }
 
         const mat = facadeMats[Math.floor(seededRandom(seed + i * 23) * facadeMats.length)];
         const roofMat = roofMats[Math.floor(seededRandom(seed + i * 31) * roofMats.length)];
@@ -242,104 +247,96 @@ function addCity() {
           new THREE.BoxGeometry(bw, bh, bd),
           [mat, mat, roofMat, roofMat, mat, mat]
         );
-        building.position.set(bx, bh/2 + .70, bz);
+        building.position.set(cx, bh / 2 + .58, cz);
         building.castShadow = true;
         building.receiveShadow = true;
         scene.add(building);
 
-        // Small roof cap for the dense city silhouette.
-        if (bh > 95 && seededRandom(seed + i * 53) > .38) {
-          const capH = 2.5 + seededRandom(seed+i*61)*5;
+        if (bh > 105 && seededRandom(seed + i * 43) > .45) {
+          const capH = 3 + seededRandom(seed + i * 47) * 4;
           const cap = new THREE.Mesh(
-            new THREE.BoxGeometry(bw*.46, capH, bd*.42),
+            new THREE.BoxGeometry(bw * .45, capH, bd * .45),
             roofMat
           );
-          cap.position.set(bx, bh + .7 + capH/2, bz);
+          cap.position.set(cx, bh + .58 + capH / 2, cz);
           cap.castShadow = true;
           scene.add(cap);
         }
 
         buildingBoxes.push({
-          minX: bx - bw/2 - 0.6,
-          maxX: bx + bw/2 + 0.6,
-          minZ: bz - bd/2 - 0.6,
-          maxZ: bz + bd/2 + 0.6
+          minX: cx - bw / 2 - .7,
+          maxX: cx + bw / 2 + .7,
+          minZ: cz - bd / 2 - .7,
+          maxZ: cz + bd / 2 + .7
         });
-      });
+      }
 
-      seed += 7;
+      seed += 9;
     }
   }
 
-  // A few landmark towers, like the tall buildings visible in the video.
-  const landmarkData = [
-    [-322,-322,30,30,235,0],
-    [322,-322,30,30,210,1],
-    [-322,322,30,30,195,2],
-    [322,322,30,30,225,3],
-    [138,-230,28,28,180,4],
-    [-138,230,28,28,170,5]
+  // Tall landmarks are also snapped to BLOCK CENTERS, never placed on a road.
+  const landmarkBlocks = [
+    [-4,-4,205,0],
+    [3,-4,190,1],
+    [-4,3,178,2],
+    [3,3,215,3],
+    [1,-3,165,4],
+    [-2,2,172,5]
   ];
 
-  landmarkData.forEach(([x,z,w,d,h,m], idx) => {
+  landmarkBlocks.forEach(([gx,gz,h,m], idx) => {
+    const x = (gx + .5) * ROAD_SPACING;
+    const z = (gz + .5) * ROAD_SPACING;
+    const w = 19;
+    const d = 19;
     const mat = facadeMats[m % facadeMats.length];
     const roofMat = roofMats[idx % roofMats.length];
+
+    // Remove overlap visually by making landmarks narrow enough to stay well inside their block.
     const tower = new THREE.Mesh(
-      new THREE.BoxGeometry(w,h,d),
-      [mat,mat,roofMat,roofMat,mat,mat]
+      new THREE.BoxGeometry(w, h, d),
+      [mat, mat, roofMat, roofMat, mat, mat]
     );
-    tower.position.set(x,h/2+.7,z);
+    tower.position.set(x, h / 2 + .58, z);
     tower.castShadow = true;
     tower.receiveShadow = true;
     scene.add(tower);
 
     const crown = new THREE.Mesh(
-      new THREE.BoxGeometry(w*.55,7,d*.55),
+      new THREE.BoxGeometry(w * .55, 6, d * .55),
       roofMat
     );
-    crown.position.set(x,h+4.2,z);
+    crown.position.set(x, h + 3.6, z);
     scene.add(crown);
 
     buildingBoxes.push({
-      minX:x-w/2-1.2,maxX:x+w/2+1.2,
-      minZ:z-d/2-1.2,maxZ:z+d/2+1.2
+      minX: x - w/2 - .7,
+      maxX: x + w/2 + .7,
+      minZ: z - d/2 - .7,
+      maxZ: z + d/2 + .7
     });
   });
 
-  // Distant skyline outside the playable blocks so the city feels endless.
-  for (let i=0;i<92;i++) {
-    const angle = (i/92)*Math.PI*2;
-    const radius = 545 + seededRandom(800+i)*120;
-    const bx = Math.cos(angle)*radius;
-    const bz = Math.sin(angle)*radius;
-    const bw = 26 + seededRandom(900+i)*25;
-    const bd = 24 + seededRandom(1000+i)*24;
-    const bh = 65 + seededRandom(1100+i)*150;
+  // Distant skyline stays outside the playable road grid.
+  for (let i = 0; i < 80; i++) {
+    const angle = (i / 80) * Math.PI * 2;
+    const radius = 575 + seededRandom(800 + i) * 115;
+    const bx = Math.cos(angle) * radius;
+    const bz = Math.sin(angle) * radius;
+    const bw = 24 + seededRandom(900 + i) * 22;
+    const bd = 22 + seededRandom(1000 + i) * 22;
+    const bh = 65 + seededRandom(1100 + i) * 140;
     const mat = facadeMats[i % facadeMats.length];
+    const roofMat = roofMats[i % roofMats.length];
 
     const b = new THREE.Mesh(
-      new THREE.BoxGeometry(bw,bh,bd),
-      [mat,mat,roofMats[i%roofMats.length],roofMats[i%roofMats.length],mat,mat]
+      new THREE.BoxGeometry(bw, bh, bd),
+      [mat, mat, roofMat, roofMat, mat, mat]
     );
-    b.position.set(bx,bh/2,bz);
+    b.position.set(bx, bh / 2, bz);
     scene.add(b);
   }
-
-  // Central green square visible between dense blocks.
-  const plaza = new THREE.Mesh(
-    new THREE.BoxGeometry(58,.5,58),
-    new THREE.MeshStandardMaterial({color:0x6f9368,roughness:1})
-  );
-  plaza.position.set(0,.34,0);
-  scene.add(plaza);
-
-  const pathMat = new THREE.MeshStandardMaterial({color:0xc2c0b8,roughness:1});
-  const p1 = new THREE.Mesh(new THREE.BoxGeometry(58,.12,5),pathMat);
-  p1.position.set(0,.65,0);
-  scene.add(p1);
-  const p2 = new THREE.Mesh(new THREE.BoxGeometry(5,.12,58),pathMat);
-  p2.position.set(0,.66,0);
-  scene.add(p2);
 }
 function createCar(color = 0xffffff) {
   const group = new THREE.Group();
