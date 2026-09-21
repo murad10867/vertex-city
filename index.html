@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260921-3d2">
+  <link rel="stylesheet" href="style.css?v=20260921-walk1">
   <script src="security.js" defer></script>
-  <script src="game.js?v=20260921-sameshape" defer></script>
+  <script src="game.js?v=20260921-walk1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -31,8 +31,9 @@
         <div><span>المهمة</span><strong id="mission">1</strong></div>
         <div><span>الوقت</span><strong id="time">90</strong></div>
         <div><span>السرعة</span><strong><span id="speed">0</span> km/h</strong></div>
+        <div><span>الوضع</span><strong id="modeValue">قيادة</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
-        <p>↑ أو W للتسارع، ↓ أو S للفرامل، و ← → أو A / D للتوجيه.<br>مر من البوابة الصفراء لإكمال المهمة.</p>
+        <p>بالسيارة: ↑ أو W للتسارع و ← → للتوجيه.<br>اضغط E للنزول والمشي، ثم اقترب من سيارتك واضغط E للركوب.</p>
       </aside>
 
       <section class="game-card">
@@ -55,6 +56,7 @@
         <button data-dir="down">↓</button>
         <button data-dir="right">→</button>
       </div>
+      <button id="actionBtn" class="action-btn" type="button">E نزول</button>
     </section>
   </main>
 
