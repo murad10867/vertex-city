@@ -1,5 +1,3 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-
 const canvas = document.getElementById('gameCanvas');
 const scoreEl = document.getElementById('score');
 const missionEl = document.getElementById('mission');
@@ -17,7 +15,6 @@ const restartBtn = document.getElementById('restartBtn');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
 renderer.setSize(960, 600, false);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -112,7 +109,6 @@ function buildingTexture(base, seed) {
   }
 
   const texture = new THREE.CanvasTexture(c);
-  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(1, 1);
@@ -601,7 +597,7 @@ function createWalker() {
   const skin = new THREE.MeshStandardMaterial({ color: 0xe8bc98, roughness: .9 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x1c2832, roughness: .9 });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.65, 1.45, 5, 10), shirt);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(.62, .72, 1.8, 12), shirt);
   body.position.y = 1.85;
   body.castShadow = true;
   g.add(body);
@@ -611,9 +607,9 @@ function createWalker() {
   head.castShadow = true;
   g.add(head);
 
-  const legGeo = new THREE.CapsuleGeometry(.18, 1.0, 4, 8);
+  const legGeo = new THREE.CylinderGeometry(.16, .18, 1.1, 8);
   const leg1 = new THREE.Mesh(legGeo, dark);
-  leg1.position.set(-.28, .63, 0);
+  leg1.position.set(-.28, .62, 0);
   g.add(leg1);
   const leg2 = leg1.clone();
   leg2.position.x = .28;
