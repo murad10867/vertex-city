@@ -220,8 +220,20 @@ function addCity() {
 
         const bw = 14 + seededRandom(seed + i * 3) * 8;
         const bd = 14 + seededRandom(seed + i * 7) * 8;
-        const bx = cx + slot[0] * blockW * 1.12;
-        const bz = cz + slot[1] * blockD * 1.12;
+
+        // Keep every building completely inside its block so nothing enters the road.
+        const rawBx = cx + slot[0] * blockW;
+        const rawBz = cz + slot[1] * blockD;
+        const bx = THREE.MathUtils.clamp(
+          rawBx,
+          x0 + bw / 2 + 2.5,
+          x1 - bw / 2 - 2.5
+        );
+        const bz = THREE.MathUtils.clamp(
+          rawBz,
+          z0 + bd / 2 + 2.5,
+          z1 - bd / 2 - 2.5
+        );
 
         const mat = facadeMats[Math.floor(seededRandom(seed + i * 23) * facadeMats.length)];
         const roofMat = roofMats[Math.floor(seededRandom(seed + i * 31) * roofMats.length)];
@@ -261,12 +273,12 @@ function addCity() {
 
   // A few landmark towers, like the tall buildings visible in the video.
   const landmarkData = [
-    [-360,-310,34,36,235,0],
-    [335,-335,36,34,210,1],
-    [-300,330,32,38,195,2],
-    [300,305,38,33,225,3],
-    [145,-275,30,34,180,4],
-    [-155,260,34,30,170,5]
+    [-322,-322,30,30,235,0],
+    [322,-322,30,30,210,1],
+    [-322,322,30,30,195,2],
+    [322,322,30,30,225,3],
+    [138,-230,28,28,180,4],
+    [-138,230,28,28,170,5]
   ];
 
   landmarkData.forEach(([x,z,w,d,h,m], idx) => {
