@@ -24,7 +24,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87c8ee);
-scene.fog = new THREE.Fog(0x9fd2ec, 260, 720);
+scene.fog = new THREE.Fog(0x9fd2ec, 420, 1050);
 
 const camera = new THREE.PerspectiveCamera(62, 960 / 600, 0.1, 1500);
 
@@ -41,10 +41,10 @@ sun.shadow.camera.top = 300;
 sun.shadow.camera.bottom = -300;
 scene.add(sun);
 
-const CITY_HALF = 495;
-const ROAD_SPACING = 110;
-const ROAD_WIDTH = 28;
-const GRID_RADIUS = 4;
+const CITY_HALF = 505;
+const ROAD_SPACING = 92;
+const ROAD_WIDTH = 22;
+const GRID_RADIUS = 5;
 const roadLines = [];
 for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) roadLines.push(i * ROAD_SPACING);
 
@@ -122,123 +122,212 @@ const facadeTextures = [
 
 function addCity() {
   const grass = new THREE.Mesh(
-    new THREE.PlaneGeometry(1100, 1100),
-    new THREE.MeshStandardMaterial({ color: 0x60825f, roughness: 1 })
+    new THREE.PlaneGeometry(1180, 1180),
+    new THREE.MeshStandardMaterial({ color: 0x6f8e69, roughness: 1 })
   );
   grass.rotation.x = -Math.PI / 2;
   grass.receiveShadow = true;
   scene.add(grass);
 
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x303438, roughness: .95 });
-  const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb4b7b5, roughness: 1 });
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xe8e4d5 });
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x3a4045, roughness: .96 });
+  const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8b8b2, roughness: .96 });
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xe8e7de });
+  const curbMat = new THREE.MeshStandardMaterial({ color: 0xd2d0c7, roughness: 1 });
 
   for (const line of roadLines) {
-    const roadZ = new THREE.Mesh(new THREE.BoxGeometry(1100, .18, ROAD_WIDTH), roadMat);
+    const roadZ = new THREE.Mesh(new THREE.BoxGeometry(1180, .18, ROAD_WIDTH), roadMat);
     roadZ.position.set(0, .10, line);
     roadZ.receiveShadow = true;
     scene.add(roadZ);
 
-    const roadX = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, .18, 1100), roadMat);
+    const roadX = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, .18, 1180), roadMat);
     roadX.position.set(line, .11, 0);
     roadX.receiveShadow = true;
     scene.add(roadX);
 
-    const centerZ = new THREE.Mesh(new THREE.BoxGeometry(1100, .03, .35), lineMat);
+    const centerZ = new THREE.Mesh(new THREE.BoxGeometry(1180, .025, .28), lineMat);
     centerZ.position.set(0, .22, line);
     scene.add(centerZ);
 
-    const centerX = new THREE.Mesh(new THREE.BoxGeometry(.35, .03, 1100), lineMat);
+    const centerX = new THREE.Mesh(new THREE.BoxGeometry(.28, .025, 1180), lineMat);
     centerX.position.set(line, .23, 0);
     scene.add(centerX);
   }
 
-  let seed = 20;
+  const facadeMats = facadeTextures.map((tex, i) => new THREE.MeshStandardMaterial({
+    map: tex,
+    color: 0xffffff,
+    roughness: .84,
+    metalness: i === 0 ? .05 : .02
+  }));
+  const roofMats = [
+    new THREE.MeshStandardMaterial({ color: 0x777b7d, roughness: .96 }),
+    new THREE.MeshStandardMaterial({ color: 0x9b7a67, roughness: .96 }),
+    new THREE.MeshStandardMaterial({ color: 0x626c73, roughness: .96 }),
+    new THREE.MeshStandardMaterial({ color: 0x887f73, roughness: .96 })
+  ];
+
+  let seed = 31;
+
+  // Dense downtown blocks, closely packed like the reference video.
   for (let gx = -GRID_RADIUS; gx < GRID_RADIUS; gx++) {
     for (let gz = -GRID_RADIUS; gz < GRID_RADIUS; gz++) {
-      const x0 = gx * ROAD_SPACING + ROAD_WIDTH / 2 + 3;
-      const x1 = (gx + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 3;
-      const z0 = gz * ROAD_SPACING + ROAD_WIDTH / 2 + 3;
-      const z1 = (gz + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 3;
+      const x0 = gx * ROAD_SPACING + ROAD_WIDTH / 2 + 2;
+      const x1 = (gx + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 2;
+      const z0 = gz * ROAD_SPACING + ROAD_WIDTH / 2 + 2;
+      const z1 = (gz + 1) * ROAD_SPACING - ROAD_WIDTH / 2 - 2;
       const blockW = x1 - x0;
       const blockD = z1 - z0;
       const cx = (x0 + x1) / 2;
       const cz = (z0 + z1) / 2;
 
       const sidewalk = new THREE.Mesh(
-        new THREE.BoxGeometry(blockW + 6, .55, blockD + 6),
+        new THREE.BoxGeometry(blockW + 5, .6, blockD + 5),
         sidewalkMat
       );
-      sidewalk.position.set(cx, .28, cz);
+      sidewalk.position.set(cx, .30, cz);
       sidewalk.receiveShadow = true;
       scene.add(sidewalk);
 
-      const count = seededRandom(seed++) > .42 ? 4 : 3;
+      const curb = new THREE.Mesh(
+        new THREE.BoxGeometry(blockW + 6.5, .16, blockD + 6.5),
+        curbMat
+      );
+      curb.position.set(cx, .60, cz);
+      curb.receiveShadow = true;
+      scene.add(curb);
+
       const slots = [
-        [-.24, -.24], [.24, -.24], [-.24, .24], [.24, .24]
+        [-.29,-.29],[0,-.29],[.29,-.29],
+        [-.29,0],[0,0],[.29,0],
+        [-.29,.29],[0,.29],[.29,.29]
       ];
 
-      for (let i = 0; i < count; i++) {
-        const rand = seededRandom(seed * 19 + i * 7);
-        const slot = slots[i];
-        const bw = 27 + seededRandom(seed + i) * 13;
-        const bd = 27 + seededRandom(seed + i + 30) * 13;
-        const bh = 42 + rand * 120;
-        const bx = cx + slot[0] * blockW * 1.35;
-        const bz = cz + slot[1] * blockD * 1.35;
-        const tex = facadeTextures[Math.floor(seededRandom(seed + i * 3) * facadeTextures.length)];
+      // Keep some gaps/mini courtyards, but most blocks are packed.
+      const count = 5 + Math.floor(seededRandom(seed++) * 4);
+      const used = slots
+        .map((slot, idx) => ({slot, r: seededRandom(seed * 13 + idx * 5)}))
+        .sort((a,b) => a.r - b.r)
+        .slice(0, count);
 
-        const sideMat = new THREE.MeshStandardMaterial({
-          map: tex,
-          color: 0xffffff,
-          roughness: .82,
-          metalness: .02
-        });
-        const roofMat = new THREE.MeshStandardMaterial({
-          color: 0x667078,
-          roughness: .95
-        });
+      used.forEach((item, i) => {
+        const slot = item.slot;
+        const centerBoost = 1 - Math.min(1, Math.hypot(cx, cz) / 520);
+        const highRise = seededRandom(seed * 19 + i * 11);
+        let bh = 46 + seededRandom(seed + i * 17) * 78 + centerBoost * 34;
+        if (highRise > .82) bh += 65 + seededRandom(seed + i * 41) * 70;
 
-        const geom = new THREE.BoxGeometry(bw, bh, bd);
-        const building = new THREE.Mesh(geom, [sideMat, sideMat, roofMat, roofMat, sideMat, sideMat]);
-        building.position.set(bx, bh / 2 + .58, bz);
+        const bw = 18 + seededRandom(seed + i * 3) * 10;
+        const bd = 18 + seededRandom(seed + i * 7) * 10;
+        const bx = cx + slot[0] * blockW * 1.48;
+        const bz = cz + slot[1] * blockD * 1.48;
+
+        const mat = facadeMats[Math.floor(seededRandom(seed + i * 23) * facadeMats.length)];
+        const roofMat = roofMats[Math.floor(seededRandom(seed + i * 31) * roofMats.length)];
+
+        const building = new THREE.Mesh(
+          new THREE.BoxGeometry(bw, bh, bd),
+          [mat, mat, roofMat, roofMat, mat, mat]
+        );
+        building.position.set(bx, bh/2 + .70, bz);
         building.castShadow = true;
         building.receiveShadow = true;
         scene.add(building);
 
+        // Small roof cap for the dense city silhouette.
+        if (bh > 95 && seededRandom(seed + i * 53) > .38) {
+          const capH = 2.5 + seededRandom(seed+i*61)*5;
+          const cap = new THREE.Mesh(
+            new THREE.BoxGeometry(bw*.46, capH, bd*.42),
+            roofMat
+          );
+          cap.position.set(bx, bh + .7 + capH/2, bz);
+          cap.castShadow = true;
+          scene.add(cap);
+        }
+
         buildingBoxes.push({
-          minX: bx - bw / 2 - 1.3,
-          maxX: bx + bw / 2 + 1.3,
-          minZ: bz - bd / 2 - 1.3,
-          maxZ: bz + bd / 2 + 1.3
+          minX: bx - bw/2 - 1.1,
+          maxX: bx + bw/2 + 1.1,
+          minZ: bz - bd/2 - 1.1,
+          maxZ: bz + bd/2 + 1.1
         });
-      }
+      });
+
+      seed += 7;
     }
   }
 
+  // A few landmark towers, like the tall buildings visible in the video.
+  const landmarkData = [
+    [-360,-310,34,36,235,0],
+    [335,-335,36,34,210,1],
+    [-300,330,32,38,195,2],
+    [300,305,38,33,225,3],
+    [145,-275,30,34,180,4],
+    [-155,260,34,30,170,5]
+  ];
+
+  landmarkData.forEach(([x,z,w,d,h,m], idx) => {
+    const mat = facadeMats[m % facadeMats.length];
+    const roofMat = roofMats[idx % roofMats.length];
+    const tower = new THREE.Mesh(
+      new THREE.BoxGeometry(w,h,d),
+      [mat,mat,roofMat,roofMat,mat,mat]
+    );
+    tower.position.set(x,h/2+.7,z);
+    tower.castShadow = true;
+    tower.receiveShadow = true;
+    scene.add(tower);
+
+    const crown = new THREE.Mesh(
+      new THREE.BoxGeometry(w*.55,7,d*.55),
+      roofMat
+    );
+    crown.position.set(x,h+4.2,z);
+    scene.add(crown);
+
+    buildingBoxes.push({
+      minX:x-w/2-1.2,maxX:x+w/2+1.2,
+      minZ:z-d/2-1.2,maxZ:z+d/2+1.2
+    });
+  });
+
+  // Distant skyline outside the playable blocks so the city feels endless.
+  for (let i=0;i<92;i++) {
+    const angle = (i/92)*Math.PI*2;
+    const radius = 545 + seededRandom(800+i)*120;
+    const bx = Math.cos(angle)*radius;
+    const bz = Math.sin(angle)*radius;
+    const bw = 26 + seededRandom(900+i)*25;
+    const bd = 24 + seededRandom(1000+i)*24;
+    const bh = 65 + seededRandom(1100+i)*150;
+    const mat = facadeMats[i % facadeMats.length];
+
+    const b = new THREE.Mesh(
+      new THREE.BoxGeometry(bw,bh,bd),
+      [mat,mat,roofMats[i%roofMats.length],roofMats[i%roofMats.length],mat,mat]
+    );
+    b.position.set(bx,bh/2,bz);
+    scene.add(b);
+  }
+
+  // Central green square visible between dense blocks.
   const plaza = new THREE.Mesh(
-    new THREE.CylinderGeometry(25, 25, .7, 48),
-    new THREE.MeshStandardMaterial({ color: 0xa8b6bd, roughness: .9 })
+    new THREE.BoxGeometry(58,.5,58),
+    new THREE.MeshStandardMaterial({color:0x6f9368,roughness:1})
   );
-  plaza.position.set(0, .45, 0);
-  plaza.receiveShadow = true;
+  plaza.position.set(0,.34,0);
   scene.add(plaza);
 
-  const fountain = new THREE.Mesh(
-    new THREE.CylinderGeometry(7, 10, 2, 32),
-    new THREE.MeshStandardMaterial({ color: 0x7f8c95, roughness: .8 })
-  );
-  fountain.position.set(0, 1.3, 0);
-  scene.add(fountain);
-
-  const water = new THREE.Mesh(
-    new THREE.CylinderGeometry(6.2, 6.2, .4, 32),
-    new THREE.MeshStandardMaterial({ color: 0x46bfe8, transparent: true, opacity: .78, roughness: .25 })
-  );
-  water.position.set(0, 2.3, 0);
-  scene.add(water);
+  const pathMat = new THREE.MeshStandardMaterial({color:0xc2c0b8,roughness:1});
+  const p1 = new THREE.Mesh(new THREE.BoxGeometry(58,.12,5),pathMat);
+  p1.position.set(0,.65,0);
+  scene.add(p1);
+  const p2 = new THREE.Mesh(new THREE.BoxGeometry(5,.12,58),pathMat);
+  p2.position.set(0,.66,0);
+  scene.add(p2);
 }
-
 function createCar(color = 0xffffff) {
   const group = new THREE.Group();
 
@@ -617,8 +706,8 @@ function updateMission(dt) {
 function updateCamera(force = false) {
   const active = mode === 'drive' ? playerCar : walker;
   const ang = mode === 'drive' ? heading + cameraYawOffset : walkHeading + cameraYawOffset;
-  const dist = mode === 'drive' ? 17 : 8.5;
-  const height = mode === 'drive' ? 8.4 : 5.8;
+  const dist = mode === 'drive' ? 19 : 9;
+  const height = mode === 'drive' ? 10.5 : 6.4;
 
   const offset = new THREE.Vector3(
     -Math.sin(ang) * dist,
