@@ -26,3 +26,14 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   letter-spacing:1px;
   pointer-events:none;
 }
+
+.action-btn{
+  min-width:112px!important;
+  width:auto!important;
+  padding:0 18px;
+  margin-top:8px!important;
+  background:linear-gradient(135deg,#ffb92d,#ff7d38)!important;
+  border-color:rgba(255,210,90,.35)!important;
+  font-size:15px!important;
+  font-weight:900;
+}
