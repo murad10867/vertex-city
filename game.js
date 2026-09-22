@@ -681,18 +681,37 @@ function clampCity(v) {
 }
 
 function makeTraffic() {
-  const colors = [0xf34f57, 0x4bbfff, 0x9f79ff, 0x64d894, 0xf1c24d];
-  for (let i = 0; i < 6; i++) {
+  const colors = [
+    0xf34f57, 0x4bbfff, 0x9f79ff, 0x64d894, 0xf1c24d,
+    0xffffff, 0x30363d, 0xff8c42, 0x4fd1c5
+  ];
+
+  const totalCars = 18;
+
+  for (let i = 0; i < totalCars; i++) {
     const alongZ = i % 2 === 0;
-    const road = roadLines[(i * 3 + 1) % roadLines.length];
+    const road = roadLines[(i * 5 + 2) % roadLines.length];
     const dir = i % 4 < 2 ? 1 : -1;
     const car = createCar(colors[i % colors.length]);
 
+    // Spread traffic across many streets so the city feels busy
+    // without putting all cars in one traffic jam.
+    const travelSpan = CITY_HALF * 2 + 70;
+    const progress = ((i * 157) % Math.floor(travelSpan)) - CITY_HALF;
+
     if (alongZ) {
-      car.position.set(road + (dir > 0 ? -6 : 6), 0, -CITY_HALF + 70 + i * 125);
+      car.position.set(
+        road + (dir > 0 ? -6 : 6),
+        0,
+        progress
+      );
       car.rotation.y = dir > 0 ? 0 : Math.PI;
     } else {
-      car.position.set(-CITY_HALF + 90 + i * 115, 0, road + (dir > 0 ? 6 : -6));
+      car.position.set(
+        progress,
+        0,
+        road + (dir > 0 ? 6 : -6)
+      );
       car.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
     }
 
@@ -702,7 +721,7 @@ function makeTraffic() {
       alongZ,
       dir,
       road,
-      speed: 11 + (i % 3) * 2.3
+      speed: 10.5 + (i % 5) * 1.35
     });
   }
 }
