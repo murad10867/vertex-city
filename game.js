@@ -24,10 +24,10 @@ scene.fog = new THREE.Fog(0x9fd2ec, 420, 1050);
 
 const camera = new THREE.PerspectiveCamera(62, 960 / 600, 0.1, 1500);
 
-const hemi = new THREE.HemisphereLight(0xdaf3ff, 0x5d6c58, 2.0);
+const hemi = new THREE.HemisphereLight(0xdaf3ff, 0x5d6c58, 1.15);
 scene.add(hemi);
 
-const sun = new THREE.DirectionalLight(0xfff2d2, 2.5);
+const sun = new THREE.DirectionalLight(0xfff2d2, 1.45);
 sun.position.set(180, 260, 80);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -443,11 +443,11 @@ function createInterior() {
   table.castShadow = true;
   interiorGroup.add(table);
 
-  const lamp = new THREE.PointLight(0xffe4b5, 38, 32);
+  const lamp = new THREE.PointLight(0xffe4b5, 24, 32);
   lamp.position.set(0, 5.5, 0);
   interiorGroup.add(lamp);
 
-  const lamp2 = new THREE.PointLight(0xc9e8ff, 22, 22);
+  const lamp2 = new THREE.PointLight(0xc9e8ff, 14, 22);
   lamp2.position.set(-7, 4.8, -5);
   interiorGroup.add(lamp2);
 }
