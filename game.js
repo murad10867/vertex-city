@@ -957,8 +957,11 @@ function updateMission(dt) {
 function updateCamera(force = false) {
   const active = mode === 'drive' ? playerCar : walker;
   const ang = mode === 'drive' ? heading + cameraYawOffset : walkHeading + cameraYawOffset;
-  const dist = mode === 'drive' ? 19 : (mode === 'interior' ? 6.7 : 9);
-  const height = mode === 'drive' ? 10.5 : (mode === 'interior' ? 4.8 : 6.4);
+
+  // In driving mode keep the camera lower and closer so the whole car
+  // is clearly visible from behind instead of looking tiny from above.
+  const dist = mode === 'drive' ? 13.5 : (mode === 'interior' ? 6.7 : 9);
+  const height = mode === 'drive' ? 6.2 : (mode === 'interior' ? 4.8 : 6.4);
 
   const offset = new THREE.Vector3(
     -Math.sin(ang) * dist,
@@ -971,7 +974,7 @@ function updateCamera(force = false) {
   else camera.position.lerp(desired, .10);
 
   const target = active.position.clone();
-  target.y += mode === 'drive' ? 2 : 2.2;
+  target.y += mode === 'drive' ? 1.55 : 2.2;
   camera.lookAt(target);
 }
 
