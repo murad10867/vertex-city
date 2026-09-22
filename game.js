@@ -987,7 +987,7 @@ function bindControls() {
       e.preventDefault();
     }
 
-    if (key === 'e' && !e.repeat) {
+    if ((key === 'e' || key === 'ث') && !e.repeat) {
       e.preventDefault();
       toggleMode();
       return;
