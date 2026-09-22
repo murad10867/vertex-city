@@ -15,6 +15,9 @@ const restartBtn = document.getElementById('restartBtn');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
 renderer.setSize(960, 600, false);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.58;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -24,10 +27,10 @@ scene.fog = new THREE.Fog(0x9fd2ec, 420, 1050);
 
 const camera = new THREE.PerspectiveCamera(62, 960 / 600, 0.1, 1500);
 
-const hemi = new THREE.HemisphereLight(0xdaf3ff, 0x5d6c58, 1.15);
+const hemi = new THREE.HemisphereLight(0xdaf3ff, 0x4a584c, 0.62);
 scene.add(hemi);
 
-const sun = new THREE.DirectionalLight(0xfff2d2, 1.45);
+const sun = new THREE.DirectionalLight(0xfff2d2, 0.72);
 sun.position.set(180, 260, 80);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -101,7 +104,7 @@ function buildingTexture(base, seed) {
   for (let r = 0; r < rows; r++) {
     for (let col = 0; col < cols; col++) {
       const lit = seededRandom(seed + r * 9 + col * 17) > .64;
-      g.fillStyle = lit ? '#d9d39b' : '#29414f';
+      g.fillStyle = lit ? '#9f9868' : '#223642';
       g.fillRect(col * cellW + 6, r * cellH + 6, cellW - 12, cellH - 11);
       g.strokeStyle = 'rgba(255,255,255,.10)';
       g.strokeRect(col * cellW + 6, r * cellH + 6, cellW - 12, cellH - 11);
@@ -137,8 +140,8 @@ function addCity() {
   cityGroup.add(grass);
 
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x34393e, roughness: .98 });
-  const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8b8b2, roughness: .96 });
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xf0eee5 });
+  const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x8e9594, roughness: .98 });
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xc9c8c0 });
 
   // Draw every road first. Buildings are generated only inside the blocks BETWEEN roads.
   for (const line of roadLines) {
@@ -443,11 +446,11 @@ function createInterior() {
   table.castShadow = true;
   interiorGroup.add(table);
 
-  const lamp = new THREE.PointLight(0xffe4b5, 24, 32);
+  const lamp = new THREE.PointLight(0xffe4b5, 1.15, 32);
   lamp.position.set(0, 5.5, 0);
   interiorGroup.add(lamp);
 
-  const lamp2 = new THREE.PointLight(0xc9e8ff, 14, 22);
+  const lamp2 = new THREE.PointLight(0xc9e8ff, 0.7, 22);
   lamp2.position.set(-7, 4.8, -5);
   interiorGroup.add(lamp2);
 }
