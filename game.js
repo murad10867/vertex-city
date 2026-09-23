@@ -11,6 +11,8 @@ const overlayTitle = document.getElementById('overlayTitle');
 const overlayText = document.getElementById('overlayText');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
+const p1StatusEl = document.getElementById('p1Status');
+const p2StatusEl = document.getElementById('p2Status');
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
@@ -25,10 +27,14 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87c8ee);
 scene.fog = new THREE.Fog(0x9fd2ec, 420, 1050);
 
-const camera = new THREE.PerspectiveCamera(62, 960 / 600, 0.1, 1500);
+const camera1 = new THREE.PerspectiveCamera(62, (960 / 2) / 600, 0.1, 1500);
+const camera2 = new THREE.PerspectiveCamera(62, (960 / 2) / 600, 0.1, 1500);
+camera1.layers.set(0);
+camera2.layers.set(0);
 
 const hemi = new THREE.HemisphereLight(0xdaf3ff, 0x4a584c, 0.62);
 scene.add(hemi);
+hemi.layers.enable(1);
 
 const sun = new THREE.DirectionalLight(0xfff2d2, 0.72);
 sun.position.set(180, 260, 80);
@@ -39,6 +45,7 @@ sun.shadow.camera.right = 300;
 sun.shadow.camera.top = 300;
 sun.shadow.camera.bottom = -300;
 scene.add(sun);
+sun.layers.enable(1);
 
 const CITY_HALF = 505;
 const ROAD_SPACING = 92;
@@ -81,7 +88,8 @@ let playerCar2;
 let walker2;
 let missionMarker;
 let currentMission = new THREE.Vector3(0, 0, 0);
-let cameraYawOffset = 0;
+let cameraYawOffset1 = 0;
+let cameraYawOffset2 = 0;
 let outsideReturn = null;
 
 function seededRandom(seed) {
@@ -495,13 +503,10 @@ function enterBuilding(entry) {
   mode = 'interior';
   speed = 0;
 
-  cityGroup.visible = false;
-  playerCar.visible = false;
-  missionMarker.visible = false;
-  traffic.forEach(t => t.mesh.visible = false);
-
+  // P1 moves to a private render layer so P2 can keep playing outside.
   interiorGroup.visible = true;
   walker.visible = true;
+  walker.layers.set(1);
   walker.position.set(0, 0, 7.2);
   walkHeading = Math.PI;
   walker.rotation.y = walkHeading;
@@ -514,13 +519,9 @@ function exitBuilding() {
   if (mode !== 'interior') return;
 
   interiorGroup.visible = false;
-  cityGroup.visible = true;
-  playerCar.visible = true;
-  missionMarker.visible = true;
-  traffic.forEach(t => t.mesh.visible = true);
-
   mode = 'walk';
   walker.visible = true;
+  walker.layers.set(0);
 
   if (outsideReturn) {
     walker.position.copy(outsideReturn.position);
@@ -855,6 +856,11 @@ function updateHud() {
   const modeName = value => value === 'drive' ? 'قيادة' : (value === 'interior' ? 'داخل مبنى' : 'مشي');
   modeEl.textContent = `P1 ${modeName(mode)} | P2 ${modeName(mode2)}`;
 
+  const p1Speed = mode === 'drive' ? Math.round(Math.abs(speed) * 4.2) : 0;
+  const p2Speed = mode2 === 'drive' ? Math.round(Math.abs(speed2) * 4.2) : 0;
+  if (p1StatusEl) p1StatusEl.textContent = `${modeName(mode)} · ${p1Speed} km/h`;
+  if (p2StatusEl) p2StatusEl.textContent = `${modeName(mode2)} · ${p2Speed} km/h`;
+
   const nearCar = mode === 'walk' && walker.visible && walker.position.distanceTo(playerCar.position) < 7;
 
   if (mode === 'drive') actionBtn.textContent = 'P1: E نزول';
@@ -893,7 +899,8 @@ function reset() {
   walkBob2 = 0;
   mode2 = 'drive';
 
-  cameraYawOffset = 0;
+  cameraYawOffset1 = 0;
+  cameraYawOffset2 = 0;
   outsideReturn = null;
 
   cityGroup.visible = true;
@@ -906,7 +913,10 @@ function reset() {
   playerCar.visible = true;
 
   walker.visible = false;
+  walker.layers.set(0);
   walker.position.copy(playerCar.position);
+  camera1.layers.set(0);
+  camera2.layers.set(0);
 
   playerCar2.position.set(5, 0, -36);
   playerCar2.rotation.y = heading2;
@@ -918,12 +928,12 @@ function reset() {
   placeMission();
   updateHud();
   updateCamera(true);
-  renderer.render(scene, camera);
+  renderSplitScreen();
 
   showOverlay(
     '🏙️',
     'Vertex City 3D',
-    'وضع لاعبين: P1 بـ WASD + E، وP2 بالأسهم + Enter. قد السيارة أو انزل وتمشَّ معاً.',
+    'شاشة مقسومة مثل It Takes Two: P1 بـ WASD + E، وP2 بالأسهم + Enter. كل لاعب له كاميرته الخاصة.',
     'ابدأ الاستكشاف',
     start
   );
@@ -1120,8 +1130,6 @@ function updateWalk2(dt) {
 }
 
 function updateTraffic(dt) {
-  if (mode === 'interior') return;
-
   for (const t of traffic) {
     if (t.alongZ) {
       t.mesh.position.z += t.dir * t.speed * dt;
@@ -1156,14 +1164,12 @@ function updateTraffic(dt) {
 }
 
 function updateMission(dt) {
-  if (mode === 'interior') return;
-
   missionMarker.rotation.y += dt * .7;
   missionMarker.position.y = .2 + Math.sin(elapsed * 2.4) * .25;
 
   const active1 = mode === 'drive' ? playerCar : walker;
   const active2 = mode2 === 'drive' ? playerCar2 : walker2;
-  const reached1 = active1.position.distanceTo(currentMission) < (mode === 'drive' ? 8 : 5);
+  const reached1 = mode !== 'interior' && active1.position.distanceTo(currentMission) < (mode === 'drive' ? 8 : 5);
   const reached2 = active2.position.distanceTo(currentMission) < (mode2 === 'drive' ? 8 : 5);
 
   if (reached1 || reached2) {
@@ -1173,30 +1179,67 @@ function updateMission(dt) {
   }
 }
 
+function followPlayerCamera(camera, active, angle, force, playerMode) {
+  const interior = playerMode === 'interior';
+  const walking = playerMode === 'walk';
+  const dist = interior ? 7.8 : (walking ? 10.5 : 15.5);
+  const height = interior ? 4.8 : (walking ? 6.2 : 8.2);
+
+  const offset = new THREE.Vector3(
+    -Math.sin(angle) * dist,
+    height,
+    -Math.cos(angle) * dist
+  );
+
+  const desired = active.position.clone().add(offset);
+  if (force) camera.position.copy(desired);
+  else camera.position.lerp(desired, .12);
+
+  const target = active.position.clone();
+  target.y += interior ? 1.8 : 2.0;
+  camera.lookAt(target);
+}
+
 function updateCamera(force = false) {
   const active1 = mode === 'drive' ? playerCar : walker;
   const active2 = mode2 === 'drive' ? playerCar2 : walker2;
 
-  const center = active1.position.clone().add(active2.position).multiplyScalar(.5);
-  const separation = active1.position.distanceTo(active2.position);
-  const ang = (mode === 'drive' ? heading : walkHeading) + cameraYawOffset;
+  camera1.layers.set(mode === 'interior' ? 1 : 0);
+  camera2.layers.set(0);
 
-  const dist = THREE.MathUtils.clamp(15 + separation * .35, 15, 38);
-  const height = THREE.MathUtils.clamp(8 + separation * .25, 8, 28);
+  const ang1 = (mode === 'drive' ? heading : walkHeading) + cameraYawOffset1;
+  const ang2 = (mode2 === 'drive' ? heading2 : walkHeading2) + cameraYawOffset2;
 
-  const offset = new THREE.Vector3(
-    -Math.sin(ang) * dist,
-    height,
-    -Math.cos(ang) * dist
-  );
+  followPlayerCamera(camera1, active1, ang1, force, mode);
+  followPlayerCamera(camera2, active2, ang2, force, mode2);
+}
 
-  const desired = center.clone().add(offset);
-  if (force) camera.position.copy(desired);
-  else camera.position.lerp(desired, .10);
+function renderSplitScreen() {
+  const size = renderer.getSize(new THREE.Vector2());
+  const width = size.x;
+  const height = size.y;
+  const leftWidth = Math.floor(width / 2);
+  const rightWidth = width - leftWidth;
 
-  const target = center.clone();
-  target.y += 1.8;
-  camera.lookAt(target);
+  camera1.aspect = leftWidth / height;
+  camera2.aspect = rightWidth / height;
+  camera1.updateProjectionMatrix();
+  camera2.updateProjectionMatrix();
+
+  renderer.setScissorTest(true);
+
+  // Player 1 - left half
+  renderer.setViewport(0, 0, leftWidth, height);
+  renderer.setScissor(0, 0, leftWidth, height);
+  renderer.render(scene, camera1);
+
+  // Player 2 - right half
+  renderer.setViewport(leftWidth, 0, rightWidth, height);
+  renderer.setScissor(leftWidth, 0, rightWidth, height);
+  renderer.render(scene, camera2);
+
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, width, height);
 }
 
 function update(dt) {
@@ -1221,7 +1264,7 @@ function loop(now) {
   last = now;
 
   update(dt);
-  renderer.render(scene, camera);
+  renderSplitScreen();
   requestAnimationFrame(loop);
 }
 
@@ -1245,9 +1288,9 @@ function bindControls() {
       return;
     }
 
-    if (key === 'q') cameraYawOffset = THREE.MathUtils.clamp(cameraYawOffset + .35, -1.1, 1.1);
-    if (key === 'r') cameraYawOffset = THREE.MathUtils.clamp(cameraYawOffset - .35, -1.1, 1.1);
-    if (key === 'c') cameraYawOffset = 0;
+    if (key === 'q') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 + .35, -1.1, 1.1);
+    if (key === 'r') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 - .35, -1.1, 1.1);
+    if (key === 'c') cameraYawOffset1 = 0;
 
     keys[key] = true;
     keys[e.key] = true;
@@ -1280,6 +1323,7 @@ function bindControls() {
 
 addCity();
 createInterior();
+interiorGroup.traverse(obj => obj.layers.set(1));
 
 playerCar = createCar(0xe8edf1);
 scene.add(playerCar);
