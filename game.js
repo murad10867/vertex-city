@@ -68,8 +68,17 @@ let heading = 0;
 let mode = 'drive';
 let walkHeading = 0;
 let walkBob = 0;
+
+let speed2 = 0;
+let heading2 = 0;
+let mode2 = 'drive';
+let walkHeading2 = 0;
+let walkBob2 = 0;
+
 let playerCar;
 let walker;
+let playerCar2;
+let walker2;
 let missionMarker;
 let currentMission = new THREE.Vector3(0, 0, 0);
 let cameraYawOffset = 0;
@@ -701,9 +710,9 @@ function createCar(color = 0xffffff) {
   group.userData.radius = 3.5;
   return group;
 }
-function createWalker() {
+function createWalker(shirtColor = 0x4e77ff) {
   const g = new THREE.Group();
-  const shirt = new THREE.MeshStandardMaterial({ color: 0x4e77ff, roughness: .8 });
+  const shirt = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: .8 });
   const skin = new THREE.MeshStandardMaterial({ color: 0xe8bc98, roughness: .9 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x1c2832, roughness: .9 });
 
@@ -843,18 +852,15 @@ function updateHud() {
   missionEl.textContent = mission;
   speedEl.textContent = mode === 'drive' ? Math.round(Math.abs(speed) * 4.2) : 0;
 
-  if (mode === 'drive') modeEl.textContent = 'قيادة';
-  else if (mode === 'interior') modeEl.textContent = 'داخل مبنى';
-  else modeEl.textContent = 'مشي';
+  const modeName = value => value === 'drive' ? 'قيادة' : (value === 'interior' ? 'داخل مبنى' : 'مشي');
+  modeEl.textContent = `P1 ${modeName(mode)} | P2 ${modeName(mode2)}`;
 
   const nearCar = mode === 'walk' && walker.visible && walker.position.distanceTo(playerCar.position) < 7;
-  const nearDoor = mode === 'walk' ? nearestEntrance(3.5) : null;
 
-  if (mode === 'drive') actionBtn.textContent = 'E نزول';
-  else if (mode === 'interior') actionBtn.textContent = 'E خروج';
-  else if (nearDoor) actionBtn.textContent = 'E دخول';
-  else if (nearCar) actionBtn.textContent = 'E ركوب';
-  else actionBtn.textContent = 'E';
+  if (mode === 'drive') actionBtn.textContent = 'P1: E نزول';
+  else if (mode === 'interior') actionBtn.textContent = 'P1: E خروج';
+  else if (nearCar) actionBtn.textContent = 'P1: E ركوب';
+  else actionBtn.textContent = 'P1: E';
 
   const best = Number(localStorage.getItem('vertexCity3DBest') || 0);
   if (score > best) localStorage.setItem('vertexCity3DBest', String(Math.floor(score)));
@@ -880,6 +886,13 @@ function reset() {
   walkHeading = 0;
   walkBob = 0;
   mode = 'drive';
+
+  speed2 = 0;
+  heading2 = 0;
+  walkHeading2 = 0;
+  walkBob2 = 0;
+  mode2 = 'drive';
+
   cameraYawOffset = 0;
   outsideReturn = null;
 
@@ -888,12 +901,19 @@ function reset() {
   missionMarker.visible = true;
   traffic.forEach(t => t.mesh.visible = true);
 
-  playerCar.position.set(0, 0, -36);
+  playerCar.position.set(-5, 0, -36);
   playerCar.rotation.y = heading;
   playerCar.visible = true;
 
   walker.visible = false;
   walker.position.copy(playerCar.position);
+
+  playerCar2.position.set(5, 0, -36);
+  playerCar2.rotation.y = heading2;
+  playerCar2.visible = true;
+
+  walker2.visible = false;
+  walker2.position.copy(playerCar2.position);
 
   placeMission();
   updateHud();
@@ -903,7 +923,7 @@ function reset() {
   showOverlay(
     '🏙️',
     'Vertex City 3D',
-    'استكشف المدينة بدون وقت: قيادة، مشي، ودخول المباني.',
+    'وضع لاعبين: P1 بـ WASD + E، وP2 بالأسهم + Enter. قد السيارة أو انزل وتمشَّ معاً.',
     'ابدأ الاستكشاف',
     start
   );
@@ -937,12 +957,6 @@ function toggleMode() {
     return;
   }
 
-  const entry = nearestEntrance(3.5);
-  if (entry) {
-    enterBuilding(entry);
-    return;
-  }
-
   if (walker.position.distanceTo(playerCar.position) <= 7) {
     mode = 'drive';
     walker.visible = false;
@@ -953,10 +967,10 @@ function toggleMode() {
   updateHud();
 }
 function updateDrive(dt) {
-  const forward = keys.w || keys.ArrowUp;
-  const backward = keys.s || keys.ArrowDown;
-  const left = keys.a || keys.ArrowLeft;
-  const right = keys.d || keys.ArrowRight;
+  const forward = keys.w;
+  const backward = keys.s;
+  const left = keys.a;
+  const right = keys.d;
 
   if (forward) speed += 24 * dt;
   else if (backward) speed -= 21 * dt;
@@ -985,10 +999,10 @@ function updateDrive(dt) {
 }
 
 function updateWalk(dt) {
-  const forward = keys.w || keys.ArrowUp;
-  const backward = keys.s || keys.ArrowDown;
-  const left = keys.a || keys.ArrowLeft;
-  const right = keys.d || keys.ArrowRight;
+  const forward = keys.w;
+  const backward = keys.s;
+  const left = keys.a;
+  const right = keys.d;
 
   const turn = (left ? 1 : 0) - (right ? 1 : 0);
   walkHeading += turn * dt * 2.2;
@@ -1018,6 +1032,93 @@ function updateWalk(dt) {
   walker.position.y = Math.sin(walkBob) * .035;
 }
 
+function toggleMode2() {
+  if (!running) return;
+
+  if (mode2 === 'drive') {
+    speed2 = 0;
+    mode2 = 'walk';
+
+    const side = new THREE.Vector3(Math.cos(heading2), 0, -Math.sin(heading2)).multiplyScalar(4.8);
+    walker2.position.copy(playerCar2.position).add(side);
+    walkHeading2 = heading2;
+    walker2.rotation.y = walkHeading2;
+    walker2.visible = true;
+    updateHud();
+    return;
+  }
+
+  if (walker2.position.distanceTo(playerCar2.position) <= 7) {
+    mode2 = 'drive';
+    walker2.visible = false;
+    heading2 = playerCar2.rotation.y;
+    speed2 = 0;
+  }
+
+  updateHud();
+}
+
+function updateDrive2(dt) {
+  const forward = keys.ArrowUp;
+  const backward = keys.ArrowDown;
+  const left = keys.ArrowLeft;
+  const right = keys.ArrowRight;
+
+  if (forward) speed2 += 24 * dt;
+  else if (backward) speed2 -= 21 * dt;
+  else speed2 *= Math.pow(.23, dt);
+
+  speed2 = THREE.MathUtils.clamp(speed2, -13, 38);
+
+  if (Math.abs(speed2) > .35) {
+    const steer = (left ? 1 : 0) - (right ? 1 : 0);
+    heading2 += steer * dt * (1.25 + Math.min(Math.abs(speed2) / 24, .8)) * Math.sign(speed2);
+  }
+
+  const forwardVec = new THREE.Vector3(Math.sin(heading2), 0, Math.cos(heading2));
+  const candidate = playerCar2.position.clone().addScaledVector(forwardVec, speed2 * dt);
+
+  if (!isInsideBuilding(candidate.x, candidate.z, 2.7)) {
+    playerCar2.position.copy(candidate);
+  } else {
+    speed2 *= -.16;
+  }
+
+  clampCity(playerCar2.position);
+  playerCar2.rotation.y = heading2;
+  score += Math.abs(speed2) * dt * .38;
+}
+
+function updateWalk2(dt) {
+  const forward = keys.ArrowUp;
+  const backward = keys.ArrowDown;
+  const left = keys.ArrowLeft;
+  const right = keys.ArrowRight;
+
+  const turn = (left ? 1 : 0) - (right ? 1 : 0);
+  walkHeading2 += turn * dt * 2.2;
+
+  let move = 0;
+  if (forward) move += 1;
+  if (backward) move -= .72;
+
+  if (move) {
+    const dir = new THREE.Vector3(Math.sin(walkHeading2), 0, Math.cos(walkHeading2));
+    const candidate = walker2.position.clone().addScaledVector(dir, move * 8.4 * dt);
+
+    if (!isInsideBuilding(candidate.x, candidate.z, .8)) {
+      walker2.position.copy(candidate);
+    }
+
+    walkBob2 += dt * 10;
+    score += Math.abs(move) * dt * .22;
+  }
+
+  clampCity(walker2.position);
+  walker2.rotation.y = walkHeading2;
+  walker2.position.y = Math.sin(walkBob2) * .035;
+}
+
 function updateTraffic(dt) {
   if (mode === 'interior') return;
 
@@ -1032,16 +1133,23 @@ function updateTraffic(dt) {
       if (t.mesh.position.x < -CITY_HALF - 35) t.mesh.position.x = CITY_HALF + 35;
     }
 
-    if (
-      mode === 'drive' &&
-      t.mesh.position.distanceTo(playerCar.position) < 6.2
-    ) {
+    if (mode === 'drive' && t.mesh.position.distanceTo(playerCar.position) < 6.2) {
       speed *= -.28;
       score = Math.max(0, score - 40);
       const push = playerCar.position.clone().sub(t.mesh.position).setY(0);
       if (push.lengthSq() > .001) {
         push.normalize().multiplyScalar(2.2);
         playerCar.position.add(push);
+      }
+    }
+
+    if (mode2 === 'drive' && t.mesh.position.distanceTo(playerCar2.position) < 6.2) {
+      speed2 *= -.28;
+      score = Math.max(0, score - 40);
+      const push2 = playerCar2.position.clone().sub(t.mesh.position).setY(0);
+      if (push2.lengthSq() > .001) {
+        push2.normalize().multiplyScalar(2.2);
+        playerCar2.position.add(push2);
       }
     }
   }
@@ -1053,22 +1161,28 @@ function updateMission(dt) {
   missionMarker.rotation.y += dt * .7;
   missionMarker.position.y = .2 + Math.sin(elapsed * 2.4) * .25;
 
-  const active = mode === 'drive' ? playerCar : walker;
-  if (active.position.distanceTo(currentMission) < (mode === 'drive' ? 8 : 5)) {
-    score += mode === 'drive' ? 240 : 300;
+  const active1 = mode === 'drive' ? playerCar : walker;
+  const active2 = mode2 === 'drive' ? playerCar2 : walker2;
+  const reached1 = active1.position.distanceTo(currentMission) < (mode === 'drive' ? 8 : 5);
+  const reached2 = active2.position.distanceTo(currentMission) < (mode2 === 'drive' ? 8 : 5);
+
+  if (reached1 || reached2) {
+    score += (reached1 && mode !== 'drive') || (reached2 && mode2 !== 'drive') ? 300 : 240;
     mission += 1;
     placeMission();
   }
 }
 
 function updateCamera(force = false) {
-  const active = mode === 'drive' ? playerCar : walker;
-  const ang = mode === 'drive' ? heading + cameraYawOffset : walkHeading + cameraYawOffset;
+  const active1 = mode === 'drive' ? playerCar : walker;
+  const active2 = mode2 === 'drive' ? playerCar2 : walker2;
 
-  // In driving mode keep the camera lower and closer so the whole car
-  // is clearly visible from behind instead of looking tiny from above.
-  const dist = mode === 'drive' ? 13.5 : (mode === 'interior' ? 6.7 : 9);
-  const height = mode === 'drive' ? 6.2 : (mode === 'interior' ? 4.8 : 6.4);
+  const center = active1.position.clone().add(active2.position).multiplyScalar(.5);
+  const separation = active1.position.distanceTo(active2.position);
+  const ang = (mode === 'drive' ? heading : walkHeading) + cameraYawOffset;
+
+  const dist = THREE.MathUtils.clamp(15 + separation * .35, 15, 38);
+  const height = THREE.MathUtils.clamp(8 + separation * .25, 8, 28);
 
   const offset = new THREE.Vector3(
     -Math.sin(ang) * dist,
@@ -1076,12 +1190,12 @@ function updateCamera(force = false) {
     -Math.cos(ang) * dist
   );
 
-  const desired = active.position.clone().add(offset);
+  const desired = center.clone().add(offset);
   if (force) camera.position.copy(desired);
   else camera.position.lerp(desired, .10);
 
-  const target = active.position.clone();
-  target.y += mode === 'drive' ? 1.55 : 2.2;
+  const target = center.clone();
+  target.y += 1.8;
   camera.lookAt(target);
 }
 
@@ -1090,6 +1204,9 @@ function update(dt) {
 
   if (mode === 'drive') updateDrive(dt);
   else updateWalk(dt);
+
+  if (mode2 === 'drive') updateDrive2(dt);
+  else updateWalk2(dt);
 
   updateTraffic(dt);
   updateMission(dt);
@@ -1122,6 +1239,12 @@ function bindControls() {
       return;
     }
 
+    if (key === 'enter' && !e.repeat) {
+      e.preventDefault();
+      toggleMode2();
+      return;
+    }
+
     if (key === 'q') cameraYawOffset = THREE.MathUtils.clamp(cameraYawOffset + .35, -1.1, 1.1);
     if (key === 'r') cameraYawOffset = THREE.MathUtils.clamp(cameraYawOffset - .35, -1.1, 1.1);
     if (key === 'c') cameraYawOffset = 0;
@@ -1136,7 +1259,7 @@ function bindControls() {
   });
 
   document.querySelectorAll('[data-dir]').forEach(button => {
-    const map = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
+    const map = { up:'w', down:'s', left:'a', right:'d' };
     const key = map[button.dataset.dir];
 
     button.addEventListener('pointerdown', e => {
@@ -1161,8 +1284,14 @@ createInterior();
 playerCar = createCar(0xe8edf1);
 scene.add(playerCar);
 
-walker = createWalker();
+walker = createWalker(0x4e77ff);
 scene.add(walker);
+
+playerCar2 = createCar(0xff7a45);
+scene.add(playerCar2);
+
+walker2 = createWalker(0xff7a45);
+scene.add(walker2);
 
 missionMarker = createMissionMarker();
 makeTraffic();
