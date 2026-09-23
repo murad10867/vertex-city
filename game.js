@@ -526,49 +526,128 @@ function exitBuilding() {
 function createCar(color = 0xffffff) {
   const group = new THREE.Group();
 
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: .38, metalness: .18 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: 0x111820, roughness: .35, metalness: .15 });
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color,
+    roughness: .24,
+    metalness: .30
+  });
+  const darkMat = new THREE.MeshStandardMaterial({
+    color: 0x111820,
+    roughness: .42,
+    metalness: .34
+  });
   const glassMat = new THREE.MeshStandardMaterial({
     color: 0x183847,
-    roughness: .16,
-    metalness: .15,
+    roughness: .10,
+    metalness: .20,
     transparent: true,
-    opacity: .88
+    opacity: .90
   });
-  const tireMat = new THREE.MeshStandardMaterial({ color: 0x0a0b0d, roughness: .95 });
-  const rimMat = new THREE.MeshStandardMaterial({ color: 0xaeb8c0, roughness: .3, metalness: .7 });
-  const redMat = new THREE.MeshStandardMaterial({ color: 0xff233c, emissive: 0x5f0008 });
+  const tireMat = new THREE.MeshStandardMaterial({
+    color: 0x090a0c,
+    roughness: .96
+  });
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: 0xbec8d0,
+    roughness: .18,
+    metalness: .86
+  });
+  const redMat = new THREE.MeshStandardMaterial({
+    color: 0xff2945,
+    emissive: 0x650009,
+    emissiveIntensity: .72
+  });
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0xf4fbff,
+    emissive: 0xc9efff,
+    emissiveIntensity: 1.0,
+    roughness: .10
+  });
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.25, 8.4), bodyMat);
-  body.position.y = 1.25;
-  body.castShadow = true;
-  body.receiveShadow = true;
-  group.add(body);
+  // Low, wide sports-car body.
+  const chassis = new THREE.Mesh(
+    new THREE.BoxGeometry(4.65, .52, 8.15),
+    bodyMat
+  );
+  chassis.position.y = .92;
+  chassis.castShadow = true;
+  chassis.receiveShadow = true;
+  group.add(chassis);
 
-  const hood = new THREE.Mesh(new THREE.BoxGeometry(4.15, .55, 2.2), bodyMat);
-  hood.position.set(0, 2.03, 2.65);
+  const shell = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 30, 16),
+    bodyMat
+  );
+  shell.scale.set(2.45, .63, 3.95);
+  shell.position.set(0, 1.26, .10);
+  shell.castShadow = true;
+  group.add(shell);
+
+  // Front of Vertex City is +Z.
+  const hood = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 28, 14),
+    bodyMat
+  );
+  hood.scale.set(2.28, .38, 2.08);
+  hood.position.set(0, 1.48, 2.45);
   hood.castShadow = true;
   group.add(hood);
 
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.65, 1.65, 3.8), glassMat);
-  cabin.position.set(0, 2.35, -.45);
-  cabin.castShadow = true;
-  group.add(cabin);
+  const rearDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(4.05, .24, 1.55),
+    bodyMat
+  );
+  rearDeck.position.set(0, 1.47, -3.05);
+  rearDeck.castShadow = true;
+  group.add(rearDeck);
 
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(3.6, .22, 3.65), darkMat);
-  roof.position.set(0, 3.24, -.45);
-  roof.castShadow = true;
-  group.add(roof);
+  const canopy = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 28, 14),
+    glassMat
+  );
+  canopy.scale.set(1.62, .78, 1.68);
+  canopy.position.set(0, 2.18, -.25);
+  canopy.rotation.x = .035;
+  canopy.castShadow = true;
+  group.add(canopy);
 
-  const bumper = new THREE.Mesh(new THREE.BoxGeometry(4.4, .42, .55), darkMat);
-  bumper.position.set(0, .8, -4.23);
-  group.add(bumper);
+  const roofSpine = new THREE.Mesh(
+    new THREE.BoxGeometry(.24, .10, 2.2),
+    bodyMat
+  );
+  roofSpine.position.set(0, 2.88, -.20);
+  group.add(roofSpine);
 
-  const wheelGeo = new THREE.CylinderGeometry(.78, .78, .72, 18);
-  const rimGeo = new THREE.CylinderGeometry(.36, .36, .74, 18);
+  for (const side of [-1, 1]) {
+    const intake = new THREE.Mesh(
+      new THREE.BoxGeometry(.12, .42, 1.55),
+      darkMat
+    );
+    intake.position.set(side * 2.38, 1.22, -.85);
+    intake.rotation.z = side * .045;
+    group.add(intake);
+
+    const skirt = new THREE.Mesh(
+      new THREE.BoxGeometry(.18, .18, 4.9),
+      darkMat
+    );
+    skirt.position.set(side * 2.37, .68, .05);
+    group.add(skirt);
+  }
+
+  const splitter = new THREE.Mesh(
+    new THREE.BoxGeometry(4.20, .12, .52),
+    darkMat
+  );
+  splitter.position.set(0, .62, 4.05);
+  group.add(splitter);
+
+  const wheelR = .76;
+  const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, .68, 22);
+  const rimGeo = new THREE.CylinderGeometry(.40, .40, .72, 20);
   const wheelPositions = [
-    [-2.22, .78, 2.45], [2.22, .78, 2.45],
-    [-2.22, .78, -2.55], [2.22, .78, -2.55]
+    [-2.30, .76, 2.55], [2.30, .76, 2.55],
+    [-2.30, .76, -2.55], [2.30, .76, -2.55]
   ];
 
   for (const [x, y, z] of wheelPositions) {
@@ -582,18 +661,45 @@ function createCar(color = 0xffffff) {
     rim.rotation.z = Math.PI / 2;
     rim.position.set(x, y, z);
     group.add(rim);
+
+    const hub = new THREE.Mesh(
+      new THREE.CylinderGeometry(.12, .12, .74, 14),
+      darkMat
+    );
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(x, y, z);
+    group.add(hub);
   }
 
   for (const x of [-1.45, 1.45]) {
-    const light = new THREE.Mesh(new THREE.BoxGeometry(.85, .34, .18), redMat);
-    light.position.set(x, 1.38, -4.31);
+    const light = new THREE.Mesh(
+      new THREE.BoxGeometry(.90, .18, .12),
+      headMat
+    );
+    light.position.set(x, 1.30, 4.16);
     group.add(light);
   }
 
+  for (const x of [-1.45, 1.45]) {
+    const tail = new THREE.Mesh(
+      new THREE.BoxGeometry(.82, .20, .13),
+      redMat
+    );
+    tail.position.set(x, 1.25, -4.10);
+    group.add(tail);
+  }
+
+  const diffuser = new THREE.Mesh(
+    new THREE.BoxGeometry(3.1, .16, .34),
+    darkMat
+  );
+  diffuser.position.set(0, .66, -4.05);
+  group.add(diffuser);
+
+  // بدون جناح خلفي.
   group.userData.radius = 3.5;
   return group;
 }
-
 function createWalker() {
   const g = new THREE.Group();
   const shirt = new THREE.MeshStandardMaterial({ color: 0x4e77ff, roughness: .8 });
