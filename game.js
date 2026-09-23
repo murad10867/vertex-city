@@ -601,29 +601,7 @@ function createCar(color = 0xffffff) {
   rearDeck.castShadow = true;
   group.add(rearDeck);
 
-  // Rear wing copied from the Vertex Racing style.
-  const racingWingW = 4.10;
-  const racingWingZ = -3.78;
-  const racingWingY = 2.28;
-
-  const racingWing = new THREE.Mesh(
-    new THREE.BoxGeometry(racingWingW, .14, .42),
-    darkMat
-  );
-  racingWing.position.set(0, racingWingY, racingWingZ);
-  racingWing.rotation.x = -.04;
-  racingWing.castShadow = true;
-  group.add(racingWing);
-
-  [-racingWingW * .36, racingWingW * .36].forEach(x => {
-    const wingLeg = new THREE.Mesh(
-      new THREE.BoxGeometry(.12, .62, .12),
-      darkMat
-    );
-    wingLeg.position.set(x, 1.97, racingWingZ + .04);
-    wingLeg.castShadow = true;
-    group.add(wingLeg);
-  });
+  // No rear wing/spoiler on the Vertex City car.
 
   const canopy = new THREE.Mesh(
     new THREE.SphereGeometry(1, 28, 14),
