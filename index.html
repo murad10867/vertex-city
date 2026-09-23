@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260921-walk1">
+  <link rel="stylesheet" href="style.css?v=20260923-split2">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260923-2p1" defer></script>
+  <script src="game.js?v=20260923-split2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -23,7 +23,7 @@
     <section class="hero">
       <span>3D OPEN CITY</span>
       <h1>Vertex City 3D</h1>
-      <p>مدينة 3D واسعة بشوارع ومبانٍ عالية. العبوا معاً في المدينة: لاعبان، سيارتان، ومهام مشتركة.</p>
+      <p>مدينة 3D واسعة بشوارع ومبانٍ عالية. لاعبان بشاشة مقسومة وكاميرا مستقلة لكل لاعب.</p>
     </section>
 
     <section class="game-layout">
@@ -38,11 +38,14 @@
 
       <section class="game-card">
         <canvas id="gameCanvas" width="960" height="600"></canvas>
+        <div class="split-divider" aria-hidden="true"></div>
+        <div class="split-hud split-hud-p1"><strong>P1</strong><span id="p1Status">قيادة · 0 km/h</span></div>
+        <div class="split-hud split-hud-p2"><strong>P2</strong><span id="p2Status">قيادة · 0 km/h</span></div>
         <div id="overlay" class="overlay show">
           <div>
             <span id="overlayIcon">🏎️</span>
             <h2 id="overlayTitle">جاهز لـ Vertex City 3D؟</h2>
-            <p id="overlayText">وضع لاعبين محلي: اللاعب 1 بـ WASD + E، واللاعب 2 بالأسهم + Enter.</p>
+            <p id="overlayText">شاشة مقسومة مثل It Takes Two: اللاعب 1 بـ WASD + E، واللاعب 2 بالأسهم + Enter.</p>
             <button id="startBtn">ابدأ</button>
           </div>
         </div>
