@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260924-cancel1">
+  <link rel="stylesheet" href="style.css?v=20260924-floors1">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260924-cancel1" defer></script>
+  <script src="game.js?v=20260924-floors1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -77,6 +77,17 @@
           <button type="button" data-furniture-player="1">P1</button>
           <button type="button" data-furniture-player="2">P2</button>
         </div>
+      </div>
+
+      <div class="floor-builder">
+        <div class="floor-builder-top">
+          <strong id="currentFloorLabel">الدور 1 من 1</strong>
+          <button id="addFloorBtn" type="button">➕ إضافة دور 2</button>
+        </div>
+        <div id="floorTabs" class="floor-tabs">
+          <button type="button" class="active">الدور 1</button>
+        </div>
+        <small>كل دور له أثاث مستقل. الحد الحالي 5 أدوار لكل بيت.</small>
       </div>
 
       <div class="furniture-catalog">
