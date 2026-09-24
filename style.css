@@ -153,3 +153,27 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   .furniture-catalog{grid-template-columns:repeat(2,1fr)}
   .furniture-edit button{padding:9px 11px}
 }
+
+
+/* Claim-any-house prompts */
+.claim-home{
+  position:absolute;
+  bottom:16px;
+  z-index:4;
+  border:1px solid rgba(255,212,71,.45);
+  border-radius:12px;
+  padding:10px 14px;
+  background:rgba(12,22,28,.92);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 10px 28px rgba(0,0,0,.36);
+  backdrop-filter:blur(8px);
+}
+.claim-home[hidden]{display:none}
+.claim-home-p1{left:16px}
+.claim-home-p2{right:16px}
+.claim-home:hover{background:#ffd447;color:#16110a}
+@media(max-width:520px){
+  .claim-home{bottom:8px;padding:8px 9px;font-size:10px;max-width:44%}
+}
