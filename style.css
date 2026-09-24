@@ -230,3 +230,37 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   .mini-map-wrap{width:130px;top:42px;padding:4px}
   .mini-map-legend{gap:7px;font-size:8px}
 }
+
+
+/* Home ownership management */
+.home-management{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  display:grid;
+  gap:8px;
+}
+.home-management>span{
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+}
+.home-management button{
+  width:100%;
+  padding:9px 10px;
+  border:1px solid rgba(255,120,120,.24);
+  border-radius:10px;
+  background:#3a1d22;
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+.home-management button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+.home-management small{
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
