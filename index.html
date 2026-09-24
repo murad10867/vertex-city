@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260923-split2">
+  <link rel="stylesheet" href="style.css?v=20260924-homes1">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260923-split2" defer></script>
+  <script src="game.js?v=20260924-homes1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -33,7 +33,7 @@
         <div><span>السرعة</span><strong><span id="speed">0</span> km/h</strong></div>
         <div><span>الوضع</span><strong id="modeValue">قيادة</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
-        <p>اللاعب 1: WASD للحركة و E للنزول/الركوب.<br>اللاعب 2: الأسهم للحركة و Enter للنزول/الركوب.<br>المهمات والنقاط مشتركة بين اللاعبين.</p>
+        <p>اللاعب 1: WASD + E. اللاعب 2: الأسهم + Enter.<br>لكل لاعب بيت مميز بعلامة بلونه. ادخل البيت ثم استخدم لوحة التأثيث.<br>الأثاث يُحفظ تلقائيًا على الجهاز.</p>
       </aside>
 
       <section class="game-card">
@@ -45,11 +45,43 @@
           <div>
             <span id="overlayIcon">🏎️</span>
             <h2 id="overlayTitle">جاهز لـ Vertex City 3D؟</h2>
-            <p id="overlayText">شاشة مقسومة مثل It Takes Two: اللاعب 1 بـ WASD + E، واللاعب 2 بالأسهم + Enter.</p>
+            <p id="overlayText">لكل لاعب شاشة وبيت خاص. امشِ إلى علامة بيتك ثم ادخل وابدأ التأثيث.</p>
             <button id="startBtn">ابدأ</button>
           </div>
         </div>
       </section>
+    </section>
+
+    <section id="houseTools" class="house-tools" hidden>
+      <div class="house-tools-head">
+        <div>
+          <small>HOME DESIGN</small>
+          <h2 id="houseToolsTitle">تأثيث بيت P1</h2>
+        </div>
+        <div class="house-player-tabs">
+          <button type="button" data-furniture-player="1">P1</button>
+          <button type="button" data-furniture-player="2">P2</button>
+        </div>
+      </div>
+
+      <div class="furniture-catalog">
+        <button type="button" data-furniture-item="sofa">🛋️ كنبة</button>
+        <button type="button" data-furniture-item="bed">🛏️ سرير</button>
+        <button type="button" data-furniture-item="table">🪵 طاولة</button>
+        <button type="button" data-furniture-item="tv">📺 تلفزيون</button>
+        <button type="button" data-furniture-item="plant">🪴 نبتة</button>
+        <button type="button" data-furniture-item="lamp">💡 لمبة</button>
+      </div>
+
+      <div class="furniture-edit">
+        <span>حرّك آخر قطعة أضفتها:</span>
+        <button type="button" data-furniture-move="left">←</button>
+        <button type="button" data-furniture-move="up">↑</button>
+        <button type="button" data-furniture-move="down">↓</button>
+        <button type="button" data-furniture-move="right">→</button>
+        <button type="button" id="rotateFurniture">↻ تدوير</button>
+        <button type="button" id="deleteFurniture" class="danger">حذف</button>
+      </div>
     </section>
 
     <section class="mobile-controls">
