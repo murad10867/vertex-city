@@ -18,6 +18,8 @@ const houseToolsTitle = document.getElementById('houseToolsTitle');
 const furniturePlayerButtons = Array.from(document.querySelectorAll('[data-furniture-player]'));
 const claimHomeP1Btn = document.getElementById('claimHomeP1');
 const claimHomeP2Btn = document.getElementById('claimHomeP2');
+const cancelHomeP1Btn = document.getElementById('cancelHomeP1');
+const cancelHomeP2Btn = document.getElementById('cancelHomeP2');
 const miniMapCanvas = document.getElementById('miniMap');
 const miniMapCtx = miniMapCanvas ? miniMapCanvas.getContext('2d') : null;
 
@@ -614,6 +616,26 @@ function claimHome(player, candidate = null) {
   return true;
 }
 
+function cancelHome(player) {
+  if (!homeEntrances[player]) return false;
+
+  // If the player is currently inside, move them safely back outside first.
+  if (player === 1 && mode === 'home') exitHome(1);
+  if (player === 2 && mode2 === 'home') exitHome(2);
+
+  homeEntrances[player] = null;
+  claimCandidates[player] = null;
+  refreshHomeMarker(player);
+  saveHomeOwnership();
+
+  // Furniture is intentionally NOT deleted. It stays linked to the player.
+  updateClaimPrompts();
+  updateMiniMap();
+  updateHouseTools();
+  updateHud();
+  return true;
+}
+
 function updateClaimPrompts() {
   claimCandidates[1] = nearestClaimableEntrance(1);
   claimCandidates[2] = nearestClaimableEntrance(2);
@@ -627,6 +649,9 @@ function updateClaimPrompts() {
     claimHomeP2Btn.hidden = !claimCandidates[2];
     claimHomeP2Btn.textContent = homeEntrances[2] ? '🏠 تغيير بيتي لهذا البيت' : '🏠 تملك هذا البيت';
   }
+
+  if (cancelHomeP1Btn) cancelHomeP1Btn.disabled = !homeEntrances[1];
+  if (cancelHomeP2Btn) cancelHomeP2Btn.disabled = !homeEntrances[2];
 }
 
 function mapWorldToCanvas(x, z) {
@@ -1863,6 +1888,12 @@ function bindControls() {
   restartBtn.addEventListener('click', reset);
   if (claimHomeP1Btn) claimHomeP1Btn.addEventListener('click', () => claimHome(1, claimCandidates[1]));
   if (claimHomeP2Btn) claimHomeP2Btn.addEventListener('click', () => claimHome(2, claimCandidates[2]));
+  if (cancelHomeP1Btn) cancelHomeP1Btn.addEventListener('click', () => {
+    if (homeEntrances[1] && window.confirm('إلغاء ملكية بيت P1؟ الأثاث سيبقى محفوظًا.')) cancelHome(1);
+  });
+  if (cancelHomeP2Btn) cancelHomeP2Btn.addEventListener('click', () => {
+    if (homeEntrances[2] && window.confirm('إلغاء ملكية بيت P2؟ الأثاث سيبقى محفوظًا.')) cancelHome(2);
+  });
 
   furniturePlayerButtons.forEach(btn => {
     btn.addEventListener('click', () => {
