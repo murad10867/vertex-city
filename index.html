@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260924-map1">
+  <link rel="stylesheet" href="style.css?v=20260924-cancel1">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260924-map1" defer></script>
+  <script src="game.js?v=20260924-cancel1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -34,6 +34,12 @@
         <div><span>الوضع</span><strong id="modeValue">قيادة</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
         <p>اللاعب 1: WASD + E. اللاعب 2: الأسهم + Enter.<br>اقترب من باب أي مبنى وسيظهر زر «تملك هذا البيت». بعد التملك تظهر علامة بيتك بلون اللاعب.<br>اختيار البيت والأثاث يُحفظان تلقائيًا.</p>
+        <div class="home-management">
+          <span>إدارة البيوت</span>
+          <button id="cancelHomeP1" type="button">🗑️ إلغاء بيت P1</button>
+          <button id="cancelHomeP2" type="button">🗑️ إلغاء بيت P2</button>
+          <small>إلغاء البيت لا يحذف أثاث اللاعب.</small>
+        </div>
       </aside>
 
       <section class="game-card">
