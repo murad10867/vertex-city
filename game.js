@@ -16,6 +16,9 @@ const p2StatusEl = document.getElementById('p2Status');
 const houseTools = document.getElementById('houseTools');
 const houseToolsTitle = document.getElementById('houseToolsTitle');
 const furniturePlayerButtons = Array.from(document.querySelectorAll('[data-furniture-player]'));
+const floorTabs = document.getElementById('floorTabs');
+const currentFloorLabel = document.getElementById('currentFloorLabel');
+const addFloorBtn = document.getElementById('addFloorBtn');
 const claimHomeP1Btn = document.getElementById('claimHomeP1');
 const claimHomeP2Btn = document.getElementById('claimHomeP2');
 const cancelHomeP1Btn = document.getElementById('cancelHomeP1');
@@ -112,8 +115,11 @@ let homeMarkerGroups = { 1: null, 2: null };
 let claimCandidates = { 1: null, 2: null };
 let activeFurniturePlayer = 1;
 let selectedFurniture = { 1: -1, 2: -1 };
+let currentFloor = { 1: 1, 2: 1 };
+let floorCount = { 1: 1, 2: 1 };
+const MAX_HOME_FLOORS = 5;
 const furnitureGroups = { 1: new THREE.Group(), 2: new THREE.Group() };
-const furnitureData = { 1: [], 2: [] };
+const furnitureData = { 1: { 1: [] }, 2: { 1: [] } };
 const FURNITURE_KEY = 'vertexCityHomesV1';
 const HOME_OWNERSHIP_KEY = 'vertexCityHomeOwnershipV1';
 
@@ -837,10 +843,16 @@ function createFurnitureMesh(type, player) {
   return g;
 }
 
+function floorItems(player, floor = currentFloor[player]) {
+  if (!furnitureData[player][floor]) furnitureData[player][floor] = [];
+  return furnitureData[player][floor];
+}
+
 function saveFurniture() {
   localStorage.setItem(FURNITURE_KEY, JSON.stringify({
-    1: furnitureData[1],
-    2: furnitureData[2]
+    version: 2,
+    1: { floorCount: floorCount[1], floors: furnitureData[1] },
+    2: { floorCount: floorCount[2], floors: furnitureData[2] }
   }));
 }
 
@@ -848,7 +860,7 @@ function rebuildFurniture(player) {
   const group = furnitureGroups[player];
   while (group.children.length) group.remove(group.children[0]);
 
-  furnitureData[player].forEach(item => {
+  floorItems(player).forEach(item => {
     const mesh = createFurnitureMesh(item.type, player);
     mesh.position.set(item.x, 0, item.z);
     mesh.rotation.y = item.rot || 0;
@@ -860,18 +872,45 @@ function rebuildFurniture(player) {
 function loadFurniture() {
   try {
     const saved = JSON.parse(localStorage.getItem(FURNITURE_KEY) || '{}');
-    furnitureData[1] = Array.isArray(saved[1]) ? saved[1] : [];
-    furnitureData[2] = Array.isArray(saved[2]) ? saved[2] : [];
+
+    for (const player of [1, 2]) {
+      const oldData = saved[player];
+
+      // Migration from the old single-floor format.
+      if (Array.isArray(oldData)) {
+        furnitureData[player] = { 1: oldData };
+        floorCount[player] = 1;
+        continue;
+      }
+
+      if (oldData && oldData.floors && typeof oldData.floors === 'object') {
+        furnitureData[player] = oldData.floors;
+        floorCount[player] = THREE.MathUtils.clamp(Number(oldData.floorCount) || 1, 1, MAX_HOME_FLOORS);
+      } else {
+        furnitureData[player] = { 1: [] };
+        floorCount[player] = 1;
+      }
+
+      for (let floor = 1; floor <= floorCount[player]; floor++) {
+        if (!Array.isArray(furnitureData[player][floor])) furnitureData[player][floor] = [];
+      }
+    }
   } catch (_) {
-    furnitureData[1] = [];
-    furnitureData[2] = [];
+    furnitureData[1] = { 1: [] };
+    furnitureData[2] = { 1: [] };
+    floorCount[1] = 1;
+    floorCount[2] = 1;
   }
+
+  currentFloor[1] = 1;
+  currentFloor[2] = 1;
   rebuildFurniture(1);
   rebuildFurniture(2);
 }
 
 function addFurniture(player, type) {
-  const count = furnitureData[player].length;
+  const items = floorItems(player);
+  const count = items.length;
   const col = count % 4;
   const row = Math.floor(count / 4) % 4;
   const item = {
@@ -880,16 +919,17 @@ function addFurniture(player, type) {
     z: -5 + row * 3.4,
     rot: 0
   };
-  furnitureData[player].push(item);
-  selectedFurniture[player] = furnitureData[player].length - 1;
+  items.push(item);
+  selectedFurniture[player] = items.length - 1;
   rebuildFurniture(player);
   saveFurniture();
   updateHouseTools();
 }
 
 function moveSelectedFurniture(player, dx, dz) {
+  const items = floorItems(player);
   const idx = selectedFurniture[player];
-  const item = furnitureData[player][idx];
+  const item = items[idx];
   if (!item) return;
   item.x = THREE.MathUtils.clamp(item.x + dx, -8.3, 8.3);
   item.z = THREE.MathUtils.clamp(item.z + dz, -8.0, 8.0);
@@ -898,8 +938,9 @@ function moveSelectedFurniture(player, dx, dz) {
 }
 
 function rotateSelectedFurniture(player) {
+  const items = floorItems(player);
   const idx = selectedFurniture[player];
-  const item = furnitureData[player][idx];
+  const item = items[idx];
   if (!item) return;
   item.rot = (item.rot || 0) + Math.PI / 2;
   rebuildFurniture(player);
@@ -907,10 +948,35 @@ function rotateSelectedFurniture(player) {
 }
 
 function deleteSelectedFurniture(player) {
+  const items = floorItems(player);
   const idx = selectedFurniture[player];
-  if (idx < 0 || !furnitureData[player][idx]) return;
-  furnitureData[player].splice(idx, 1);
-  selectedFurniture[player] = furnitureData[player].length - 1;
+  if (idx < 0 || !items[idx]) return;
+  items.splice(idx, 1);
+  selectedFurniture[player] = items.length - 1;
+  rebuildFurniture(player);
+  saveFurniture();
+  updateHouseTools();
+}
+
+function setHomeFloor(player, floor) {
+  floor = THREE.MathUtils.clamp(Number(floor) || 1, 1, floorCount[player]);
+  currentFloor[player] = floor;
+  selectedFurniture[player] = -1;
+  rebuildFurniture(player);
+
+  const who = player === 1 ? walker : walker2;
+  if (who) who.position.set(0, 0, 7.2);
+
+  updateHouseTools();
+}
+
+function addHomeFloor(player) {
+  if (floorCount[player] >= MAX_HOME_FLOORS) return;
+  floorCount[player] += 1;
+  const newFloor = floorCount[player];
+  furnitureData[player][newFloor] = [];
+  currentFloor[player] = newFloor;
+  selectedFurniture[player] = -1;
   rebuildFurniture(player);
   saveFurniture();
   updateHouseTools();
@@ -931,6 +997,29 @@ function updateHouseTools() {
     btn.classList.toggle('active', p === activeFurniturePlayer);
     btn.disabled = (p === 1 && !p1Home) || (p === 2 && !p2Home);
   });
+
+  if (currentFloorLabel) {
+    currentFloorLabel.textContent = `الدور ${currentFloor[activeFurniturePlayer]} من ${floorCount[activeFurniturePlayer]}`;
+  }
+
+  if (floorTabs) {
+    floorTabs.innerHTML = '';
+    for (let floor = 1; floor <= floorCount[activeFurniturePlayer]; floor++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = `الدور ${floor}`;
+      btn.className = floor === currentFloor[activeFurniturePlayer] ? 'active' : '';
+      btn.addEventListener('click', () => setHomeFloor(activeFurniturePlayer, floor));
+      floorTabs.appendChild(btn);
+    }
+  }
+
+  if (addFloorBtn) {
+    addFloorBtn.disabled = floorCount[activeFurniturePlayer] >= MAX_HOME_FLOORS;
+    addFloorBtn.textContent = addFloorBtn.disabled
+      ? `وصلت الحد ${MAX_HOME_FLOORS} أدوار`
+      : `➕ إضافة دور ${floorCount[activeFurniturePlayer] + 1}`;
+  }
 }
 
 function enterHome(player) {
@@ -1900,6 +1989,7 @@ function bindControls() {
       const player = Number(btn.dataset.furniturePlayer);
       if ((player === 1 && mode === 'home') || (player === 2 && mode2 === 'home')) {
         activeFurniturePlayer = player;
+        rebuildFurniture(player);
         updateHouseTools();
       }
     });
@@ -1918,6 +2008,8 @@ function bindControls() {
       if (dir === 'down') moveSelectedFurniture(activeFurniturePlayer, 0, .7);
     });
   });
+
+  if (addFloorBtn) addFloorBtn.addEventListener('click', () => addHomeFloor(activeFurniturePlayer));
 
   const rotateBtn = document.getElementById('rotateFurniture');
   const deleteBtn = document.getElementById('deleteFurniture');
