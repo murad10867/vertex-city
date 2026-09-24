@@ -16,6 +16,8 @@ const p2StatusEl = document.getElementById('p2Status');
 const houseTools = document.getElementById('houseTools');
 const houseToolsTitle = document.getElementById('houseToolsTitle');
 const furniturePlayerButtons = Array.from(document.querySelectorAll('[data-furniture-player]'));
+const claimHomeP1Btn = document.getElementById('claimHomeP1');
+const claimHomeP2Btn = document.getElementById('claimHomeP2');
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
@@ -102,11 +104,14 @@ let cameraYawOffset2 = 0;
 let outsideReturn = null;
 let outsideReturn2 = null;
 let homeEntrances = { 1: null, 2: null };
+let homeMarkerGroups = { 1: null, 2: null };
+let claimCandidates = { 1: null, 2: null };
 let activeFurniturePlayer = 1;
 let selectedFurniture = { 1: -1, 2: -1 };
 const furnitureGroups = { 1: new THREE.Group(), 2: new THREE.Group() };
 const furnitureData = { 1: [], 2: [] };
 const FURNITURE_KEY = 'vertexCityHomesV1';
+const HOME_OWNERSHIP_KEY = 'vertexCityHomeOwnershipV1';
 
 function seededRandom(seed) {
   const x = Math.sin(seed * 999.91) * 43758.5453;
@@ -489,7 +494,7 @@ function createInterior() {
 }
 
 function makeHomeMarker(entry, player, color) {
-  if (!entry) return;
+  if (!entry) return null;
   const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .18, roughness: .55 });
   const base = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, .18, 24), mat);
@@ -511,13 +516,53 @@ function makeHomeMarker(entry, player, color) {
   g.add(plate);
 
   cityGroup.add(g);
+  return g;
+}
+
+function homeIndex(player) {
+  const entry = homeEntrances[player];
+  return entry ? buildingEntrances.indexOf(entry) : -1;
+}
+
+function refreshHomeMarker(player) {
+  if (homeMarkerGroups[player]) {
+    cityGroup.remove(homeMarkerGroups[player]);
+    homeMarkerGroups[player] = null;
+  }
+  const entry = homeEntrances[player];
+  if (!entry) return;
+  const color = player === 1 ? 0x4e77ff : 0xff7a45;
+  homeMarkerGroups[player] = makeHomeMarker(entry, player, color);
+}
+
+function saveHomeOwnership() {
+  localStorage.setItem(HOME_OWNERSHIP_KEY, JSON.stringify({
+    1: homeIndex(1),
+    2: homeIndex(2)
+  }));
 }
 
 function setupPlayerHomes() {
-  homeEntrances[1] = buildingEntrances[0] || null;
-  homeEntrances[2] = buildingEntrances[buildingEntrances.length - 1] || buildingEntrances[1] || null;
-  makeHomeMarker(homeEntrances[1], 1, 0x4e77ff);
-  makeHomeMarker(homeEntrances[2], 2, 0xff7a45);
+  homeEntrances[1] = null;
+  homeEntrances[2] = null;
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(HOME_OWNERSHIP_KEY) || '{}');
+    for (const player of [1, 2]) {
+      const idx = Number(saved[player]);
+      if (Number.isInteger(idx) && idx >= 0 && idx < buildingEntrances.length) {
+        homeEntrances[player] = buildingEntrances[idx];
+      }
+    }
+  } catch (_) {}
+
+  // If old/corrupt saved data points both players at one house, P2 becomes unassigned.
+  if (homeEntrances[1] && homeEntrances[1] === homeEntrances[2]) {
+    homeEntrances[2] = null;
+  }
+
+  refreshHomeMarker(1);
+  refreshHomeMarker(2);
 }
 
 function nearHome(player, maxDistance = 5.2) {
@@ -525,6 +570,60 @@ function nearHome(player, maxDistance = 5.2) {
   const who = player === 1 ? walker : walker2;
   if (!entry || !who || !who.visible) return false;
   return Math.hypot(who.position.x - entry.x, who.position.z - entry.z) <= maxDistance;
+}
+
+function nearestClaimableEntrance(player, maxDistance = 5.2) {
+  const who = player === 1 ? walker : walker2;
+  const playerMode = player === 1 ? mode : mode2;
+  if (!who || !who.visible || playerMode !== 'walk') return null;
+
+  const otherPlayer = player === 1 ? 2 : 1;
+  let best = null;
+  let bestDistance = maxDistance;
+
+  for (let i = 0; i < buildingEntrances.length; i++) {
+    const entry = buildingEntrances[i];
+    if (entry === homeEntrances[player]) continue;
+    if (entry === homeEntrances[otherPlayer]) continue;
+
+    const d = Math.hypot(who.position.x - entry.x, who.position.z - entry.z);
+    if (d < bestDistance) {
+      bestDistance = d;
+      best = { entry, index: i };
+    }
+  }
+  return best;
+}
+
+function claimHome(player, candidate = null) {
+  const choice = candidate || nearestClaimableEntrance(player);
+  if (!choice || !choice.entry) return false;
+
+  const otherPlayer = player === 1 ? 2 : 1;
+  if (choice.entry === homeEntrances[otherPlayer]) return false;
+
+  homeEntrances[player] = choice.entry;
+  refreshHomeMarker(player);
+  saveHomeOwnership();
+  claimCandidates[player] = null;
+  updateClaimPrompts();
+  updateHud();
+  return true;
+}
+
+function updateClaimPrompts() {
+  claimCandidates[1] = nearestClaimableEntrance(1);
+  claimCandidates[2] = nearestClaimableEntrance(2);
+
+  if (claimHomeP1Btn) {
+    claimHomeP1Btn.hidden = !claimCandidates[1];
+    claimHomeP1Btn.textContent = homeEntrances[1] ? '🏠 تغيير بيتي لهذا البيت' : '🏠 تملك هذا البيت';
+  }
+
+  if (claimHomeP2Btn) {
+    claimHomeP2Btn.hidden = !claimCandidates[2];
+    claimHomeP2Btn.textContent = homeEntrances[2] ? '🏠 تغيير بيتي لهذا البيت' : '🏠 تملك هذا البيت';
+  }
 }
 
 function createFurnitureMesh(type, player) {
@@ -1123,11 +1222,13 @@ function updateHud() {
 
   const nearCar = mode === 'walk' && walker.visible && walker.position.distanceTo(playerCar.position) < 7;
   const p1NearHome = mode === 'walk' && nearHome(1);
+  const p1Claim = claimCandidates[1];
 
   if (mode === 'drive') actionBtn.textContent = 'P1: E نزول';
   else if (mode === 'home') actionBtn.textContent = 'P1: E خروج من البيت';
   else if (mode === 'interior') actionBtn.textContent = 'P1: E خروج';
   else if (p1NearHome) actionBtn.textContent = 'P1: E دخول البيت';
+  else if (p1Claim) actionBtn.textContent = homeEntrances[1] ? 'P1: E تغيير البيت' : 'P1: E تملك هذا البيت';
   else if (nearCar) actionBtn.textContent = 'P1: E ركوب';
   else actionBtn.textContent = 'P1: E';
 
@@ -1166,6 +1267,8 @@ function reset() {
   cameraYawOffset2 = 0;
   outsideReturn = null;
   outsideReturn2 = null;
+  claimCandidates[1] = null;
+  claimCandidates[2] = null;
 
   cityGroup.visible = true;
   interiorGroup.visible = false;
@@ -1193,6 +1296,7 @@ function reset() {
 
   placeMission();
   updateHouseTools();
+  updateClaimPrompts();
   updateHud();
   updateCamera(true);
   renderSplitScreen();
@@ -1200,7 +1304,7 @@ function reset() {
   showOverlay(
     '🏙️',
     'Vertex City 3D',
-    'شاشة مقسومة + بيت خاص لكل لاعب. امشِ إلى علامة بيتك، ثم E لـ P1 أو Enter لـ P2 للدخول والتأثيث.',
+    'اختر بيتك بنفسك: انزل من السيارة واقترب من باب أي مبنى، ثم اضغط زر تملك هذا البيت. بعدها ادخل وأثث بيتك.',
     'ابدأ الاستكشاف',
     start
   );
@@ -1241,6 +1345,12 @@ function toggleMode() {
 
   if (nearHome(1)) {
     enterHome(1);
+    return;
+  }
+
+  const p1Claim = nearestClaimableEntrance(1);
+  if (p1Claim) {
+    claimHome(1, p1Claim);
     return;
   }
 
@@ -1342,6 +1452,12 @@ function toggleMode2() {
 
   if (nearHome(2)) {
     enterHome(2);
+    return;
+  }
+
+  const p2Claim = nearestClaimableEntrance(2);
+  if (p2Claim) {
+    claimHome(2, p2Claim);
     return;
   }
 
@@ -1545,6 +1661,7 @@ function update(dt) {
   updateTraffic(dt);
   updateMission(dt);
   updateCamera(false);
+  updateClaimPrompts();
   updateHud();
 }
 
@@ -1610,6 +1727,8 @@ function bindControls() {
 
   actionBtn.addEventListener('click', toggleMode);
   restartBtn.addEventListener('click', reset);
+  if (claimHomeP1Btn) claimHomeP1Btn.addEventListener('click', () => claimHome(1, claimCandidates[1]));
+  if (claimHomeP2Btn) claimHomeP2Btn.addEventListener('click', () => claimHome(2, claimCandidates[2]));
 
   furniturePlayerButtons.forEach(btn => {
     btn.addEventListener('click', () => {
