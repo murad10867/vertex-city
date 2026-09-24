@@ -18,6 +18,8 @@ const houseToolsTitle = document.getElementById('houseToolsTitle');
 const furniturePlayerButtons = Array.from(document.querySelectorAll('[data-furniture-player]'));
 const claimHomeP1Btn = document.getElementById('claimHomeP1');
 const claimHomeP2Btn = document.getElementById('claimHomeP2');
+const miniMapCanvas = document.getElementById('miniMap');
+const miniMapCtx = miniMapCanvas ? miniMapCanvas.getContext('2d') : null;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
@@ -607,6 +609,7 @@ function claimHome(player, candidate = null) {
   saveHomeOwnership();
   claimCandidates[player] = null;
   updateClaimPrompts();
+  updateMiniMap();
   updateHud();
   return true;
 }
@@ -624,6 +627,135 @@ function updateClaimPrompts() {
     claimHomeP2Btn.hidden = !claimCandidates[2];
     claimHomeP2Btn.textContent = homeEntrances[2] ? '🏠 تغيير بيتي لهذا البيت' : '🏠 تملك هذا البيت';
   }
+}
+
+function mapWorldToCanvas(x, z) {
+  if (!miniMapCanvas) return { x: 0, y: 0 };
+  const pad = 12;
+  const span = CITY_HALF * 2;
+  return {
+    x: pad + ((x + CITY_HALF) / span) * (miniMapCanvas.width - pad * 2),
+    y: pad + ((z + CITY_HALF) / span) * (miniMapCanvas.height - pad * 2)
+  };
+}
+
+function drawMapLabel(ctx, text, x, y, bg) {
+  ctx.font = 'bold 11px Arial';
+  const w = ctx.measureText(text).width + 10;
+  ctx.fillStyle = bg;
+  ctx.fillRect(x - w / 2, y - 23, w, 17);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y - 14.5);
+}
+
+function drawHomeOnMap(player, color) {
+  if (!miniMapCtx || !homeEntrances[player]) return;
+  const entry = homeEntrances[player];
+  const p = mapWorldToCanvas(entry.x, entry.z);
+
+  miniMapCtx.save();
+  miniMapCtx.translate(p.x, p.y);
+
+  miniMapCtx.fillStyle = color;
+  miniMapCtx.beginPath();
+  miniMapCtx.moveTo(0, -8);
+  miniMapCtx.lineTo(9, 0);
+  miniMapCtx.lineTo(7, 0);
+  miniMapCtx.lineTo(7, 8);
+  miniMapCtx.lineTo(-7, 8);
+  miniMapCtx.lineTo(-7, 0);
+  miniMapCtx.lineTo(-9, 0);
+  miniMapCtx.closePath();
+  miniMapCtx.fill();
+
+  miniMapCtx.fillStyle = '#ffffff';
+  miniMapCtx.fillRect(-2, 2, 4, 6);
+  miniMapCtx.restore();
+
+  drawMapLabel(miniMapCtx, `بيت P${player}`, p.x, p.y, color);
+}
+
+function worldPositionForMap(player) {
+  if (player === 1) {
+    if (mode === 'home' && homeEntrances[1]) return new THREE.Vector3(homeEntrances[1].x, 0, homeEntrances[1].z);
+    return (mode === 'drive' ? playerCar : walker).position;
+  }
+  if (mode2 === 'home' && homeEntrances[2]) return new THREE.Vector3(homeEntrances[2].x, 0, homeEntrances[2].z);
+  return (mode2 === 'drive' ? playerCar2 : walker2).position;
+}
+
+function drawPlayerOnMap(player, color) {
+  if (!miniMapCtx) return;
+  const pos = worldPositionForMap(player);
+  if (!pos) return;
+  const p = mapWorldToCanvas(pos.x, pos.z);
+
+  miniMapCtx.save();
+  miniMapCtx.beginPath();
+  miniMapCtx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
+  miniMapCtx.fillStyle = color;
+  miniMapCtx.fill();
+  miniMapCtx.lineWidth = 2;
+  miniMapCtx.strokeStyle = '#ffffff';
+  miniMapCtx.stroke();
+  miniMapCtx.restore();
+}
+
+function updateMiniMap() {
+  if (!miniMapCtx || !miniMapCanvas) return;
+
+  const w = miniMapCanvas.width;
+  const h = miniMapCanvas.height;
+  miniMapCtx.clearRect(0, 0, w, h);
+
+  miniMapCtx.fillStyle = 'rgba(7,16,24,.94)';
+  miniMapCtx.fillRect(0, 0, w, h);
+
+  const pad = 12;
+  const innerW = w - pad * 2;
+  const innerH = h - pad * 2;
+
+  // City blocks
+  miniMapCtx.fillStyle = '#263e35';
+  miniMapCtx.fillRect(pad, pad, innerW, innerH);
+
+  // Road grid
+  miniMapCtx.strokeStyle = '#7d8790';
+  miniMapCtx.lineWidth = 4;
+  for (const road of roadLines) {
+    const px = mapWorldToCanvas(road, 0).x;
+    const py = mapWorldToCanvas(0, road).y;
+
+    miniMapCtx.beginPath();
+    miniMapCtx.moveTo(px, pad);
+    miniMapCtx.lineTo(px, h - pad);
+    miniMapCtx.stroke();
+
+    miniMapCtx.beginPath();
+    miniMapCtx.moveTo(pad, py);
+    miniMapCtx.lineTo(w - pad, py);
+    miniMapCtx.stroke();
+  }
+
+  // Mission
+  if (missionMarker && missionMarker.visible) {
+    const m = mapWorldToCanvas(currentMission.x, currentMission.z);
+    miniMapCtx.beginPath();
+    miniMapCtx.arc(m.x, m.y, 3.5, 0, Math.PI * 2);
+    miniMapCtx.fillStyle = '#ffd447';
+    miniMapCtx.fill();
+  }
+
+  drawHomeOnMap(1, '#4e77ff');
+  drawHomeOnMap(2, '#ff7a45');
+  drawPlayerOnMap(1, '#4e77ff');
+  drawPlayerOnMap(2, '#ff7a45');
+
+  miniMapCtx.strokeStyle = 'rgba(255,255,255,.22)';
+  miniMapCtx.lineWidth = 1;
+  miniMapCtx.strokeRect(.5, .5, w - 1, h - 1);
 }
 
 function createFurnitureMesh(type, player) {
@@ -1297,6 +1429,7 @@ function reset() {
   placeMission();
   updateHouseTools();
   updateClaimPrompts();
+  updateMiniMap();
   updateHud();
   updateCamera(true);
   renderSplitScreen();
@@ -1662,6 +1795,7 @@ function update(dt) {
   updateMission(dt);
   updateCamera(false);
   updateClaimPrompts();
+  updateMiniMap();
   updateHud();
 }
 
