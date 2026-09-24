@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260924-homes1">
+  <link rel="stylesheet" href="style.css?v=20260924-claim1">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260924-homes1" defer></script>
+  <script src="game.js?v=20260924-claim1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -33,7 +33,7 @@
         <div><span>السرعة</span><strong><span id="speed">0</span> km/h</strong></div>
         <div><span>الوضع</span><strong id="modeValue">قيادة</strong></div>
         <div><span>أفضل نتيجة</span><strong id="best">0</strong></div>
-        <p>اللاعب 1: WASD + E. اللاعب 2: الأسهم + Enter.<br>لكل لاعب بيت مميز بعلامة بلونه. ادخل البيت ثم استخدم لوحة التأثيث.<br>الأثاث يُحفظ تلقائيًا على الجهاز.</p>
+        <p>اللاعب 1: WASD + E. اللاعب 2: الأسهم + Enter.<br>اقترب من باب أي مبنى وسيظهر زر «تملك هذا البيت». بعد التملك تظهر علامة بيتك بلون اللاعب.<br>اختيار البيت والأثاث يُحفظان تلقائيًا.</p>
       </aside>
 
       <section class="game-card">
@@ -41,11 +41,13 @@
         <div class="split-divider" aria-hidden="true"></div>
         <div class="split-hud split-hud-p1"><strong>P1</strong><span id="p1Status">قيادة · 0 km/h</span></div>
         <div class="split-hud split-hud-p2"><strong>P2</strong><span id="p2Status">قيادة · 0 km/h</span></div>
+        <button id="claimHomeP1" class="claim-home claim-home-p1" type="button" hidden>🏠 تملك هذا البيت</button>
+        <button id="claimHomeP2" class="claim-home claim-home-p2" type="button" hidden>🏠 تملك هذا البيت</button>
         <div id="overlay" class="overlay show">
           <div>
             <span id="overlayIcon">🏎️</span>
             <h2 id="overlayTitle">جاهز لـ Vertex City 3D؟</h2>
-            <p id="overlayText">لكل لاعب شاشة وبيت خاص. امشِ إلى علامة بيتك ثم ادخل وابدأ التأثيث.</p>
+            <p id="overlayText">اختر بيتك بنفسك: اقترب من باب أي مبنى وسيظهر زر تملك هذا البيت.</p>
             <button id="startBtn">ابدأ</button>
           </div>
         </div>
