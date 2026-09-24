@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#101820">
   <meta name="description" content="Vertex City 3D">
   <title>Vertex City 3D</title>
-  <link rel="stylesheet" href="style.css?v=20260924-claim1">
+  <link rel="stylesheet" href="style.css?v=20260924-map1">
   <script src="security.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" defer></script>
-  <script src="game.js?v=20260924-claim1" defer></script>
+  <script src="game.js?v=20260924-map1" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -41,6 +41,13 @@
         <div class="split-divider" aria-hidden="true"></div>
         <div class="split-hud split-hud-p1"><strong>P1</strong><span id="p1Status">قيادة · 0 km/h</span></div>
         <div class="split-hud split-hud-p2"><strong>P2</strong><span id="p2Status">قيادة · 0 km/h</span></div>
+        <div class="mini-map-wrap" aria-label="خريطة المدينة ومواقع بيوت اللاعبين">
+          <canvas id="miniMap" width="210" height="150"></canvas>
+          <div class="mini-map-legend">
+            <span><i class="p1-dot"></i>بيت P1</span>
+            <span><i class="p2-dot"></i>بيت P2</span>
+          </div>
+        </div>
         <button id="claimHomeP1" class="claim-home claim-home-p1" type="button" hidden>🏠 تملك هذا البيت</button>
         <button id="claimHomeP2" class="claim-home claim-home-p2" type="button" hidden>🏠 تملك هذا البيت</button>
         <div id="overlay" class="overlay show">
