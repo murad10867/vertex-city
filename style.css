@@ -264,3 +264,62 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   font-size:10px;
   line-height:1.5;
 }
+
+
+/* Multi-floor home builder */
+.floor-builder{
+  margin-bottom:14px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+}
+.floor-builder-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.floor-builder-top strong{
+  font-size:14px;
+}
+.floor-builder-top button{
+  border:1px solid rgba(255,212,71,.35);
+  border-radius:10px;
+  padding:9px 12px;
+  background:#2a2516;
+  color:#ffd447;
+  font-size:12px;
+  font-weight:900;
+}
+.floor-builder-top button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.floor-tabs{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.floor-tabs button{
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:8px 10px;
+  background:#15232b;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+}
+.floor-tabs button.active{
+  background:#ffd447;
+  color:#171108;
+  border-color:#ffd447;
+}
+.floor-builder>small{
+  display:block;
+  margin-top:9px;
+  color:var(--muted);
+  font-size:10px;
+}
