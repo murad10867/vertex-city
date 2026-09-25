@@ -1611,10 +1611,10 @@ function toggleMode() {
   updateHud();
 }
 function updateDrive(dt) {
-  const forward = keys.w;
-  const backward = keys.s;
-  const left = keys.a;
-  const right = keys.d;
+  const forward = keys.KeyW || keys.w || keys['ص'];
+  const backward = keys.KeyS || keys.s || keys['س'];
+  const left = keys.KeyA || keys.a || keys['ش'];
+  const right = keys.KeyD || keys.d || keys['ي'];
 
   if (forward) speed += 24 * dt;
   else if (backward) speed -= 21 * dt;
@@ -1643,10 +1643,10 @@ function updateDrive(dt) {
 }
 
 function updateWalk(dt) {
-  const forward = keys.w;
-  const backward = keys.s;
-  const left = keys.a;
-  const right = keys.d;
+  const forward = keys.KeyW || keys.w || keys['ص'];
+  const backward = keys.KeyS || keys.s || keys['س'];
+  const left = keys.KeyA || keys.a || keys['ش'];
+  const right = keys.KeyD || keys.d || keys['ي'];
 
   const turn = (left ? 1 : 0) - (right ? 1 : 0);
   walkHeading += turn * dt * 2.2;
@@ -1927,32 +1927,35 @@ function loop(now) {
 function bindControls() {
   document.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
+    const code = e.code;
 
-    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key)) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyW','KeyA','KeyS','KeyD'].includes(code)) {
       e.preventDefault();
     }
 
-    if ((key === 'e' || key === 'ث') && !e.repeat) {
+    if ((code === 'KeyE' || key === 'e' || key === 'ث') && !e.repeat) {
       e.preventDefault();
       toggleMode();
       return;
     }
 
-    if (key === 'enter' && !e.repeat) {
+    if (code === 'Enter' && !e.repeat) {
       e.preventDefault();
       toggleMode2();
       return;
     }
 
-    if (key === 'q') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 + .35, -1.1, 1.1);
-    if (key === 'r') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 - .35, -1.1, 1.1);
-    if (key === 'c') cameraYawOffset1 = 0;
+    if (code === 'KeyQ') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 + .35, -1.1, 1.1);
+    if (code === 'KeyR') cameraYawOffset1 = THREE.MathUtils.clamp(cameraYawOffset1 - .35, -1.1, 1.1);
+    if (code === 'KeyC') cameraYawOffset1 = 0;
 
+    keys[code] = true;
     keys[key] = true;
     keys[e.key] = true;
   }, { passive: false });
 
   document.addEventListener('keyup', e => {
+    keys[e.code] = false;
     keys[e.key.toLowerCase()] = false;
     keys[e.key] = false;
   });
