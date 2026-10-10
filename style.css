@@ -323,3 +323,9 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   color:var(--muted);
   font-size:10px;
 }
+
+/* Darah Al Fursan quick access */
+.topbar-actions{display:flex;align-items:center;gap:9px}
+#goDarahBtn{background:linear-gradient(135deg,#496e54,#2d523c);border:1px solid rgba(205,243,215,.38);color:#fff;font-weight:800}
+#goDarahBtn:hover{filter:brightness(1.14)}
+@media(max-width:440px){#goDarahBtn{font-size:12px;padding:10px 7px}.topbar-actions{gap:5px}}
