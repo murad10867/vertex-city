@@ -1113,6 +1113,7 @@ function nearestEntrance(maxDistance = 3.5) {
   let best = maxDistance;
 
   for (const entry of buildingEntrances) {
+    if (!entry) continue;
     const dx = walker.position.x - entry.x;
     const dz = walker.position.z - entry.z;
     const d = Math.hypot(dx, dz);
