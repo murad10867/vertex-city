@@ -81,7 +81,7 @@
       }
     }
     const latticeTexture = new THREE.CanvasTexture(patternCanvas);
-    latticeTexture.colorSpace = THREE.SRGBColorSpace || undefined;
+    latticeTexture.encoding = THREE.sRGBEncoding;
     const latticeMaterial = new THREE.MeshStandardMaterial({map:latticeTexture, roughness:.90});
 
     const lots = {'A':[], 'B':[], '2':[], '3':[]};
@@ -239,10 +239,10 @@
       new THREE.PlaneGeometry(22,5.5),
       new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide})
     );
-    sign.position.set(-15,8,-100);
+    sign.position.set(-46,8,-78);
     cityGroup.add(sign);
-    cube('Darah entrance sign pillar',1.2,8,.9,-25,4.2,-100,materials.ivory);
-    cube('Darah entrance sign pillar',1.2,8,.9,-5,4.2,-100,materials.ivory);
+    cube('Darah entrance sign pillar',1.2,8,.9,-56,4.2,-78,materials.ivory);
+    cube('Darah entrance sign pillar',1.2,8,.9,-36,4.2,-78,materials.ivory);
     const total=Object.values(lots).reduce((a,b)=>a+b.length,0);
     console.info('Darah Al Fursan district added:',total,'villas,',amenities.length,'civic/park blocks.');
   };
