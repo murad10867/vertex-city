@@ -153,11 +153,10 @@
 
     // All decorative triangles belonging to a facade share one geometry.
     // Leave intentional empty triangles so the pattern feels perforated.
-    function latticeGeometry(cx,front,height,width,patternVariant) {
+    function latticeGeometry(cx,front,height,width,patternVariant,bottom=5.08) {
       const positions=[],normals=[],indices=[];
       const rows=7,cols=9;
       const stepx=width/(cols+.6), stepy=height/(rows+.55);
-      const bottom=5.08;
       const z=front-.47;
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
@@ -188,13 +187,23 @@
     for(const [type,homes] of Object.entries(lots)){
       if(!homes.length)continue;
       const big=(type==='A'||type==='B');
+      const villa2=type==='2';
       const w=big?9.7:9.1;
       const d=big?11.7:11.15;
       const front=-d/2;
       const back=d/2;
+      // Villa 2 coordinates below come from the submitted 10 x 25 m
+      // Blender plan. We keep the neighborhood's reduced 15 m plot spacing,
+      // so this is a facade adaptation, NOT a 1:1 architectural conversion.
+      const brochureX=x=>(x-5)*(w/10);
       const patternRight=(type==='2'||type==='3');
-      const patternX=patternRight?w*.315:-w*.315;
-      const solidX=-patternX*.72;
+      const patternX=villa2?brochureX(8.26):(patternRight?w*.315:-w*.315);
+      const screenW=villa2?2.60*(w/10):w*.29;
+      const copperBottom=villa2?5.62:5.08;
+      const copperHeight=villa2?2.78:1.55;
+      const solidX=villa2?brochureX(4.38):-patternX*.72;
+      const mainDoorX=villa2?brochureX(4.76):-w*.09;
+      const upperWindowX=villa2?brochureX(8.62):patternX;
       const facadeMat=type==='3'?materials.grey:materials.ivory;
       const trimMat=type==='B'?materials.bronze:materials.grey;
       const groupByMaterial=new Map();
@@ -208,29 +217,33 @@
       add(materials.base,w,2.94,d,0,2.06,0);
       add(facadeMat,w+.15,3.18,d+.08,0,5.15,.0);
       add(materials.ivory,w+.40,.24,d+.42,0,6.85,0);
-      add(materials.grey,w*.59,2.48,.18,solidX,5.33,front-.18);
+      add(materials.grey,villa2?4.96*(w/10):w*.59,2.48,.18,solidX,5.33,front-.18);
       // The main overhang casts a front shadow on the driveway.
       add(materials.grey,w*.92,.25,1.15,-.04,3.53,front-.28);
-      add(trimMat,w*.24,3.02,.14,patternX,5.36,front-.26);
-      add(materials.trim,w*.32,2.45,.08,patternX,5.38,front-.36);
-      // Bronze lattice border and real, individually shaped open triangles.
-      add(materials.bronze,w*.34,.085,.13,patternX,6.68,front-.42);
-      add(materials.bronze,w*.34,.085,.13,patternX,4.17,front-.42);
+      const screenCentre=copperBottom+copperHeight/2;
+      add(trimMat,screenW+.10,copperHeight+.12,.14,patternX,screenCentre,front-.26);
+      add(materials.trim,screenW+.04,copperHeight+.04,.08,patternX,screenCentre,front-.36);
+      // Copper pattern: original Villa 2 screen x=6.96..9.56,
+      // elevation z=5.62..8.40, centered above the master window.
+      add(materials.bronze,screenW+.12,.085,.13,patternX,copperBottom+copperHeight,front-.42);
+      add(materials.bronze,screenW+.12,.085,.13,patternX,copperBottom,front-.42);
       for(const sx of [-1,1])
-        add(materials.bronze,.085,2.50,.14,patternX+sx*w*.17,5.42,front-.42);
-      // Upper feature picture window beneath the triangular relief.
-      add(materials.trim,w*.30,1.23,.095,patternX,4.40,front-.53);
-      add(detailMats.darkGlass,w*.27,1.05,.099,patternX,4.41,front-.60);
-      add(materials.trim,.052,1.05,.11,patternX,4.41,front-.66);
-      add(materials.trim,w*.30,.052,.12,patternX,4.00,front-.66);
+        add(materials.bronze,.085,copperHeight,.14,patternX+sx*screenW*.50,screenCentre,front-.42);
+      // Actual front master-window proportions from F1_OPEN (1.85m x 2.10m).
+      const masterWindowWidth=villa2?1.85*(w/10):w*.30;
+      const masterWindowHeight=villa2?1.45:1.05;
+      add(materials.trim,masterWindowWidth+.15,masterWindowHeight+.14,.095,upperWindowX,4.34,front-.53);
+      add(detailMats.darkGlass,masterWindowWidth,masterWindowHeight,.099,upperWindowX,4.34,front-.60);
+      add(materials.trim,.052,masterWindowHeight,.11,upperWindowX,4.34,front-.66);
+      add(materials.trim,masterWindowWidth+.15,.052,.12,upperWindowX,4.06,front-.66);
       // Vertical concrete seams and upper facade trim.
       add(materials.grey,.07,2.60,.16,-w*.01,5.27,front-.28);
       add(detailMats.white,w+.46,.13,.19,0,6.95,front-.08);
       // Main door and the recessed porch.
-      add(materials.trim,1.53,2.68,.12,-w*.09,1.93,front-.16);
-      add(materials.wood,1.34,2.45,.13,-w*.09,1.85,front-.26);
-      add(materials.bronze,.045,.58,.12,-w*.09+.42,1.88,front-.35);
-      add(detailMats.light,.10,.27,.10,-w*.09+1.04,2.25,front-.25);
+      add(materials.trim,1.53,2.68,.12,mainDoorX,1.93,front-.16);
+      add(materials.wood,1.34,2.45,.13,mainDoorX,1.85,front-.26);
+      add(materials.bronze,.045,.58,.12,mainDoorX+.42,1.88,front-.35);
+      add(detailMats.light,.10,.27,.10,mainDoorX+1.04,2.25,front-.25);
       // Picture windows with dark horizontal/vertical aluminum mullions.
       function windowFrame(x,y,z,sx,sy) {
         add(materials.trim,sx+.10,sy+.12,.11,x,y,z);
@@ -238,7 +251,7 @@
         add(materials.trim,.045,sy,.14,x,y,z-.15);
         add(materials.trim,sx+.10,.055,.14,x,y+sy*.05,z-.15);
       }
-      windowFrame(w*.285,2.04,front-.29,w*.33,1.76);
+      windowFrame(villa2?brochureX(7.79):w*.285,2.04,front-.29,villa2?1.84*(w/10):w*.33,1.76);
       // Tall side light beside the entry, framed separately.
       windowFrame(-w*.34,2.03,front-.31,w*.13,2.27);
       // Side windows embedded in facade (dark frames face right).
@@ -308,7 +321,7 @@
       }
 
       // Bronze 3D triangular pattern, not a flat printed rectangle.
-      const tileGeo=latticeGeometry(patternX,front,1.55,w*.29,type.charCodeAt(0)%5);
+      const tileGeo=latticeGeometry(patternX,front,copperHeight,screenW,type.charCodeAt(0)%5,copperBottom);
       const tileMesh=new THREE.InstancedMesh(tileGeo,materials.bronze,homes.length);
       tileMesh.frustumCulled=false;
       tileMesh.castShadow=false;
@@ -333,7 +346,7 @@
           minX:home.x-halfX,maxX:home.x+halfX,
           minZ:home.z-halfZ,maxZ:home.z+halfZ
         });
-        const localX=-w*.09,localZ=front-.26;
+        const localX=mainDoorX,localZ=front-.26;
         const cos=Math.cos(home.angle),sin=Math.sin(home.angle);
         const doorX=home.x+localX*cos+localZ*sin;
         const doorZ=home.z-localX*sin+localZ*cos;
