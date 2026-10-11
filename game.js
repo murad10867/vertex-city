@@ -284,14 +284,6 @@ function addCity() {
 
       const count = 3 + (seededRandom(seed++) > .45 ? 1 : 0);
 
-      // Reserve these blocks for Darah Al Fursan. Keep placeholder slots so
-      // home indices saved before the upgrade still refer to the same houses.
-      if (window.DARAH_BLOCKS && window.DARAH_BLOCKS.has(gx + ',' + gz)) {
-        for (let oldHouse = 0; oldHouse < count; oldHouse++) buildingEntrances.push(null);
-        seed += 9;
-        continue;
-      }
-
       for (let i = 0; i < count; i++) {
         const [cx, cz] = cellCenters[i];
 
@@ -393,7 +385,6 @@ function addCity() {
   ];
 
   landmarkBlocks.forEach(([gx,gz,h,m], idx) => {
-    if (window.DARAH_BLOCKS && window.DARAH_BLOCKS.has(gx + ',' + gz)) return;
     const x = (gx + .5) * ROAD_SPACING;
     const z = (gz + .5) * ROAD_SPACING;
     const w = 19;
@@ -446,11 +437,6 @@ function addCity() {
     cityGroup.add(b);
   }
 
-  if (typeof window.addDarahFursanDistrict === 'function') {
-    window.addDarahFursanDistrict({
-      THREE, cityGroup, buildingBoxes, buildingEntrances, ROAD_SPACING, ROAD_WIDTH
-    });
-  }
 }
 function createInterior() {
   const floorMat = new THREE.MeshStandardMaterial({ color: 0x8b7f72, roughness: .95 });
@@ -608,7 +594,6 @@ function nearestClaimableEntrance(player, maxDistance = 5.2) {
 
   for (let i = 0; i < buildingEntrances.length; i++) {
     const entry = buildingEntrances[i];
-    if (!entry) continue;
     if (entry === homeEntrances[player]) continue;
     if (entry === homeEntrances[otherPlayer]) continue;
 
@@ -768,14 +753,6 @@ function updateMiniMap() {
   miniMapCtx.fillStyle = '#263e35';
   miniMapCtx.fillRect(pad, pad, innerW, innerH);
 
-  // Darah Al Fursan neighborhood, shaded on the existing city mini-map.
-  if (window.DARAH_BLOCKS) {
-    const a=mapWorldToCanvas(-92,-460);
-    const b=mapWorldToCanvas(460,276);
-    miniMapCtx.fillStyle='rgba(101,174,119,.24)';
-    miniMapCtx.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
-  }
-
   // Road grid
   miniMapCtx.strokeStyle = '#7d8790';
   miniMapCtx.lineWidth = 4;
@@ -801,11 +778,6 @@ function updateMiniMap() {
     miniMapCtx.arc(m.x, m.y, 3.5, 0, Math.PI * 2);
     miniMapCtx.fillStyle = '#ffd447';
     miniMapCtx.fill();
-  }
-
-  if (window.DARAH_BLOCKS) {
-    const mark=mapWorldToCanvas(115,-90);
-    drawMapLabel(miniMapCtx, 'دارة الفرسان', mark.x, mark.y, '#41664d');
   }
 
   drawHomeOnMap(1, '#4e77ff');
@@ -1113,7 +1085,6 @@ function nearestEntrance(maxDistance = 3.5) {
   let best = maxDistance;
 
   for (const entry of buildingEntrances) {
-    if (!entry) continue;
     const dx = walker.position.x - entry.x;
     const dz = walker.position.z - entry.z;
     const d = Math.hypot(dx, dz);
@@ -2008,26 +1979,6 @@ function bindControls() {
 
   actionBtn.addEventListener('click', toggleMode);
   restartBtn.addEventListener('click', reset);
-  const darahBtn=document.getElementById('goDarahBtn');
-  if (darahBtn) darahBtn.addEventListener('click', () => {
-    if (mode === 'home' || mode === 'interior') {
-      window.alert('اخرج من البيت أولًا قبل زيارة دارة الفرسان.');
-      return;
-    }
-    speed=0;
-    heading=Math.PI/2;
-    playerCar.position.set(20,0,-92);
-    playerCar.rotation.y=heading;
-    playerCar.visible=true;
-    walker.visible=false;
-    walker.position.copy(playerCar.position);
-    mode='drive';
-    cameraYawOffset1=0;
-    updateCamera(true);
-    updateMiniMap();
-    updateHud();
-    if (!running) start();
-  });
   if (claimHomeP1Btn) claimHomeP1Btn.addEventListener('click', () => claimHome(1, claimCandidates[1]));
   if (claimHomeP2Btn) claimHomeP2Btn.addEventListener('click', () => claimHome(2, claimCandidates[2]));
   if (cancelHomeP1Btn) cancelHomeP1Btn.addEventListener('click', () => {
