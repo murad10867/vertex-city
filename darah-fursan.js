@@ -216,7 +216,7 @@
       // Bronze lattice border and real, individually shaped open triangles.
       add(materials.bronze,w*.34,.085,.13,patternX,6.68,front-.42);
       add(materials.bronze,w*.34,.085,.13,patternX,4.17,front-.42);
-      for(const sx of (-1,1))
+      for(const sx of [-1,1])
         add(materials.bronze,.085,2.50,.14,patternX+sx*w*.17,5.42,front-.42);
       // Upper feature picture window beneath the triangular relief.
       add(materials.trim,w*.30,1.23,.095,patternX,4.40,front-.53);
@@ -280,8 +280,8 @@
       add(detailMats.car,2.05,.66,3.32,cx,1.15,cz);
       add(detailMats.car,1.72,.54,1.76,cx,1.68,cz+.14);
       add(detailMats.darkGlass,1.48,.36,.08,cx,1.74,cz-.81);
-      for(const xx of (-.89,.89))
-        for(const zz of (-1.04,1.04))
+      for(const xx of [-.89,.89])
+        for(const zz of [-1.04,1.04]
           add(detailMats.tyre,.21,.54,.54,cx+xx,1.01,cz+zz);
       // Fine horizontal facade lines for a more detailed architectural look.
       add(materials.grey,w*.56,.075,.075,solidX,4.02,front-.32);
