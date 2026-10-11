@@ -242,7 +242,7 @@
       // Tall side light beside the entry, framed separately.
       windowFrame(-w*.34,2.03,front-.31,w*.13,2.27);
       // Side windows embedded in facade (dark frames face right).
-      for(const zz of (-d*.16,d*.26)){
+      for(const zz of [-d*.16,d*.26]){
         add(materials.trim,.10,1.60,1.34,w/2+.10,4.95,zz);
         add(detailMats.darkGlass,.11,1.46,1.21,w/2+.17,4.94,zz);
         add(materials.trim,.13,.054,1.35,w/2+.18,4.96,zz);
@@ -281,7 +281,7 @@
       add(detailMats.car,1.72,.54,1.76,cx,1.68,cz+.14);
       add(detailMats.darkGlass,1.48,.36,.08,cx,1.74,cz-.81);
       for(const xx of [-.89,.89])
-        for(const zz of [-1.04,1.04]
+        for(const zz of [-1.04,1.04])
           add(detailMats.tyre,.21,.54,.54,cx+xx,1.01,cz+zz);
       // Fine horizontal facade lines for a more detailed architectural look.
       add(materials.grey,w*.56,.075,.075,solidX,4.02,front-.32);
