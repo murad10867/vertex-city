@@ -11,6 +11,7 @@ const overlayTitle = document.getElementById('overlayTitle');
 const overlayText = document.getElementById('overlayText');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
+const goDarahBtn = document.getElementById('goDarahBtn');
 const p1StatusEl = document.getElementById('p1Status');
 const p2StatusEl = document.getElementById('p2Status');
 const houseTools = document.getElementById('houseTools');
@@ -75,6 +76,13 @@ const traffic = [];
 
 const cityGroup = new THREE.Group();
 scene.add(cityGroup);
+let darahState = null;
+let darahLoadError = null;
+function isDarahMap() {
+  if (!darahState || !playerCar) return false;
+  return playerCar.position.x > 700 ||
+    (mode === 'home' && homeEntrances[1] && homeEntrances[1].district === 'دارة الفرسان');
+}
 
 const interiorGroup = new THREE.Group();
 interiorGroup.visible = false;
@@ -426,6 +434,8 @@ function addCity() {
     const bw = 24 + seededRandom(900 + i) * 22;
     const bd = 22 + seededRandom(1000 + i) * 22;
     const bh = 65 + seededRandom(1100 + i) * 140;
+    // Keep the eastern highway to Dar Al-Fursan clear of skyline scenery.
+    if (bx > 500 && Math.abs(bz) < 42) continue;
     const mat = facadeMats[i % facadeMats.length];
     const roofMat = roofMats[i % roofMats.length];
 
@@ -664,10 +674,14 @@ function updateClaimPrompts() {
 function mapWorldToCanvas(x, z) {
   if (!miniMapCanvas) return { x: 0, y: 0 };
   const pad = 12;
-  const span = CITY_HALF * 2;
+  const district = isDarahMap();
+  const minX = district ? darahState.bounds.minX : -CITY_HALF;
+  const maxX = district ? darahState.bounds.maxX : CITY_HALF;
+  const minZ = district ? darahState.bounds.minZ : -CITY_HALF;
+  const maxZ = district ? darahState.bounds.maxZ : CITY_HALF;
   return {
-    x: pad + ((x + CITY_HALF) / span) * (miniMapCanvas.width - pad * 2),
-    y: pad + ((z + CITY_HALF) / span) * (miniMapCanvas.height - pad * 2)
+    x: pad + ((x - minX) / (maxX - minX)) * (miniMapCanvas.width - pad * 2),
+    y: pad + ((z - minZ) / (maxZ - minZ)) * (miniMapCanvas.height - pad * 2)
   };
 }
 
@@ -753,22 +767,41 @@ function updateMiniMap() {
   miniMapCtx.fillStyle = '#263e35';
   miniMapCtx.fillRect(pad, pad, innerW, innerH);
 
-  // Road grid
-  miniMapCtx.strokeStyle = '#7d8790';
-  miniMapCtx.lineWidth = 4;
-  for (const road of roadLines) {
-    const px = mapWorldToCanvas(road, 0).x;
-    const py = mapWorldToCanvas(0, road).y;
+  if (isDarahMap()) {
+    // Exact block rings derived from the uploaded brochure script.
+    miniMapCtx.fillStyle = '#b7b4ab';
+    for (const poly of darahState.mapBlocks) {
+      if (!poly.length) continue;
+      miniMapCtx.beginPath();
+      poly[0].forEach(([x, y], i) => {
+        const xy = mapWorldToCanvas(1250 + x, -y);
+        if (i === 0) miniMapCtx.moveTo(xy.x, xy.y);
+        else miniMapCtx.lineTo(xy.x, xy.y);
+      });
+      miniMapCtx.closePath();
+      miniMapCtx.fill();
+    }
+    miniMapCtx.fillStyle='#ffffff';
+    miniMapCtx.font='bold 11px Arial';
+    miniMapCtx.textAlign='center';
+    miniMapCtx.fillText('دارة الفرسان', w / 2, 20);
+  } else {
+    miniMapCtx.strokeStyle = '#7d8790';
+    miniMapCtx.lineWidth = 4;
+    for (const road of roadLines) {
+      const px = mapWorldToCanvas(road, 0).x;
+      const py = mapWorldToCanvas(0, road).y;
 
-    miniMapCtx.beginPath();
-    miniMapCtx.moveTo(px, pad);
-    miniMapCtx.lineTo(px, h - pad);
-    miniMapCtx.stroke();
+      miniMapCtx.beginPath();
+      miniMapCtx.moveTo(px, pad);
+      miniMapCtx.lineTo(px, h - pad);
+      miniMapCtx.stroke();
 
-    miniMapCtx.beginPath();
-    miniMapCtx.moveTo(pad, py);
-    miniMapCtx.lineTo(w - pad, py);
-    miniMapCtx.stroke();
+      miniMapCtx.beginPath();
+      miniMapCtx.moveTo(pad, py);
+      miniMapCtx.lineTo(w - pad, py);
+      miniMapCtx.stroke();
+    }
   }
 
   // Mission
@@ -1399,7 +1432,9 @@ function isInsideBuilding(x, z, margin = 0) {
 }
 
 function clampCity(v) {
-  v.x = THREE.MathUtils.clamp(v.x, -CITY_HALF, CITY_HALF);
+  // The original city remains -505..505; Dar Al-Fursan is an eastern extension.
+  const east = darahState ? darahState.bounds.maxX + 10 : CITY_HALF;
+  v.x = THREE.MathUtils.clamp(v.x, -CITY_HALF, east);
   v.z = THREE.MathUtils.clamp(v.z, -CITY_HALF, CITY_HALF);
 }
 
@@ -1908,6 +1943,13 @@ function update(dt) {
 
   updateTraffic(dt);
   updateMission(dt);
+  if (darahState) {
+    const p1 = mode === 'drive' ? playerCar : (mode === 'walk' ? walker : playerCar);
+    const p2 = mode2 === 'drive' ? playerCar2 : (mode2 === 'walk' ? walker2 : playerCar2);
+    darahState.group.visible = p1.position.x > 650 || p2.position.x > 650;
+    if (goDarahBtn && !goDarahBtn.disabled)
+      goDarahBtn.textContent = p1.position.x > 700 ? '🏙️ العودة للمدينة' : '🏘️ زيارة دارة الفرسان';
+  }
   updateCamera(false);
   updateClaimPrompts();
   updateMiniMap();
@@ -1979,6 +2021,30 @@ function bindControls() {
 
   actionBtn.addEventListener('click', toggleMode);
   restartBtn.addEventListener('click', reset);
+  if (goDarahBtn) goDarahBtn.addEventListener('click', () => {
+    if (!darahState) return;
+    if (mode === 'home' || mode === 'interior') {
+      window.alert('اخرج من البيت أولًا قبل الانتقال إلى الحي.');
+      return;
+    }
+    const goingBack = playerCar.position.x > 700;
+    const nextX = goingBack ? -5 : darahState.arrival.x;
+    const nextZ = goingBack ? -36 : darahState.arrival.z;
+    speed = 0;
+    heading = goingBack ? 0 : Math.PI / 2;
+    playerCar.position.set(nextX, 0, nextZ);
+    playerCar.rotation.y = heading;
+    playerCar.visible = true;
+    walker.visible = false;
+    walker.position.copy(playerCar.position);
+    mode = 'drive';
+    cameraYawOffset1 = 0;
+    updateCamera(true);
+    updateMiniMap();
+    updateHud();
+    goDarahBtn.textContent = goingBack ? '🏘️ زيارة دارة الفرسان' : '🏙️ العودة للمدينة';
+    if (!running) start();
+  });
   if (claimHomeP1Btn) claimHomeP1Btn.addEventListener('click', () => claimHome(1, claimCandidates[1]));
   if (claimHomeP2Btn) claimHomeP2Btn.addEventListener('click', () => claimHome(2, claimCandidates[2]));
   if (cancelHomeP1Btn) cancelHomeP1Btn.addEventListener('click', () => {
@@ -2054,3 +2120,20 @@ missionMarker = createMissionMarker();
 makeTraffic();
 bindControls();
 reset();
+if (typeof window.buildDarahFursan === 'function') {
+  window.buildDarahFursan({THREE, scene, buildingBoxes, buildingEntrances})
+    .then(result => {
+      darahState = result;
+      if (goDarahBtn) {
+        goDarahBtn.disabled = false;
+        goDarahBtn.textContent = '🏘️ زيارة دارة الفرسان';
+      }
+      updateMiniMap();
+      console.info('Vertex City + Dar Al-Fursan ready');
+    })
+    .catch(error => {
+      darahLoadError = error;
+      console.error('Darah load failed:', error);
+      if (goDarahBtn) goDarahBtn.textContent = 'تعذر تحميل دارة الفرسان';
+    });
+}
