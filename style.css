@@ -323,3 +323,10 @@ footer{text-align:center;color:#63747d;padding:0 15px 28px;font-weight:700}
   color:var(--muted);
   font-size:10px;
 }
+
+/* Dar Al-Fursan: accessible district travel button */
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#goDarahBtn{border:1px solid #789d86;background:#285848;color:#fff;font-weight:800;padding:10px 14px;border-radius:10px}
+#goDarahBtn:disabled{opacity:.65;cursor:wait}
+#goDarahBtn:not(:disabled):hover{background:#36725d}
+@media(max-width:540px){#goDarahBtn{font-size:12px;padding:9px 8px}.topbar-actions{gap:5px}}
